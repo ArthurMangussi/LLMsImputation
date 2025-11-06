@@ -14,3 +14,16 @@ Pergunta Gemini: Por favor, me informe 10 datasets tabulares para classificaçã
 | 9 | Wine Quality (Classificação) | Saúde/Nutrição | ~1600 | Contínuas | [UCI Wine Quality](https://archive.ics.uci.edu/ml/datasets/wine+quality) |
 | 10 | Hepatite (Hepatitis) | Gastroenterologia | 155 | Contínuas e Categóricas | [UCI Hepatitis](https://archive.ics.uci.edu/ml/datasets/hepatitis) |
 
+ChatGPT:
+| # | Nome do Dataset | Área da Saúde | Observações (aprox.) | Colunas (Mistura) | Tipo de Tarefa | Link de Referência |
+|---|------------------|----------------|----------------------|------------------|----------------|--------------------|
+| 1 | Breast Cancer Coimbra Dataset | Oncologia | 1.160 | Contínuas | Binária (Maligno/Benigno) | [UCI Breast Cancer Coimbra](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Coimbra) |
+| 2 | Stroke Prediction Dataset | Neurologia | 5.110 | Contínuas e Categóricas | Binária (AVC/Não AVC) | [Kaggle Stroke Prediction](https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset) |
+| 3 | Heart Failure Clinical Records | Cardiologia | 2.999 | Contínuas e Categóricas | Binária (Óbito/Não Óbito) | [UCI Heart Failure](https://archive.ics.uci.edu/ml/datasets/Heart+failure+clinical+records) |
+| 4 | Cervical Cancer Risk (Risk Factors) | Oncologia | 858 - 1.000* | Contínuas e Categóricas | Binária (Câncer/Não) | [UCI Cervical Cancer (Risk Factors)](https://archive.ics.uci.edu/ml/datasets/Cervical+cancer+%28Risk+Factors%29) |
+| 5 | Diabetic Retinopathy Debrecen | Oftalmologia | 1.151 | Contínuas | Binária (Presença/Ausência) | [UCI Diabetic Retinopathy](https://archive.ics.uci.edu/ml/datasets/Diabetic+Retinopathy+Debrecen+Data+Set) |
+| 6 | Parkinson’s Telemonitoring | Neurologia | 5.875 | Contínuas | Regressão/Multiclasse (gravidade) | [UCI Parkinson’s Telemonitoring](https://archive.ics.uci.edu/ml/datasets/Parkinsons+Telemonitoring) |
+| 7 | COVID-19 Clinical Data (Mexico) | Epidemiologia | ~5.600 | Contínuas e Categóricas | Binária (Sobreviveu/Não) | [Kaggle COVID-19 Mexico](https://www.kaggle.com/datasets/meirnizri/covid19-dataset) |
+| 8 | Diabetes 130-US Hospitals | Endocrinologia | 10.000 | Contínuas e Categóricas | Binária (Readmissão/Não) | [UCI Diabetes 130-US Hospitals](https://archive.ics.uci.edu/ml/datasets/diabetes+130-us+hospitals+for+years+1999-2008) |
+| 9 | Hepatitis C Virus (HCV) Data | Gastroenterologia | 615 - 1.600* | Contínuas e Categóricas | Multiclasse (Fase da doença) | [UCI Hepatitis C Virus Data Set](https://archive.ics.uci.edu/ml/datasets/HCV+data) |
+| 10 | Blood Transfusion Service Center | Hematologia | 7.48k | Contínuas | Binária (Doou/Não doou) | [UCI Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center) |
