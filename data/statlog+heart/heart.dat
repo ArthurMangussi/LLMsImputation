@@ -1,3 +1,4 @@
+age sex chest_pain blood_p serum blood_s ecg_results maximum_heart exercise oldpeak splope_peak nro_vessels thal target
 70.0 1.0 4.0 130.0 322.0 0.0 2.0 109.0 0.0 2.4 2.0 3.0 3.0 2
 67.0 0.0 3.0 115.0 564.0 0.0 2.0 160.0 0.0 1.6 2.0 0.0 7.0 1
 57.0 1.0 2.0 124.0 261.0 0.0 0.0 141.0 0.0 0.3 1.0 0.0 7.0 2

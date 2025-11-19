@@ -29,7 +29,8 @@ from algorithms.gain import Gain
 
 # TabPFN
 from tabpfn import TabPFNClassifier, TabPFNRegressor
-from algorithms.tabpfn_extensions.src.tabpfn_extensions import unsupervised
+
+# from algorithms.tabpfn_extensions.src.tabpfn_extensions import unsupervised
 
 import pandas as pd
 import numpy as np

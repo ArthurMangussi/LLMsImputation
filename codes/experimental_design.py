@@ -174,4 +174,4 @@ if __name__ == "__main__":
 
     mecanismo = "MAR"
 
-    pipeline_benchmark_imputation("tabpfn", mecanismo, tabela_resultados)
+    pipeline_benchmark_imputation("knn", mecanismo, tabela_resultados)

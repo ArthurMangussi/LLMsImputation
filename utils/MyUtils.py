@@ -167,9 +167,9 @@ class MyPipeline:
 
                     datasets_carregados[nome] = dados
 
-                elif extensao == ".train":
+                elif extensao == ".train" or extensao == ".dat":
                     dados = pd.read_csv(caminho_completo, delim_whitespace=True)
-                    datasets_carregados[f"{nome}-train"] = dados
+                    datasets_carregados[nome] = dados
 
                 elif extensao == ".test":
                     dados = pd.read_csv(caminho_completo, delim_whitespace=True)

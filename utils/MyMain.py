@@ -24,17 +24,70 @@ class BenchmarkPipeline:
     # ------------------------------------------------------------------------
     def pre_processing_cervical(self):
         cervical = self.datasets["risk_factors_cervical_cancer"].copy()
-        return
+        cervical = cervical.drop(
+            columns=[
+                "STDs: Time since last diagnosis",
+                "STDs: Time since first diagnosis",
+            ]
+        )
+        return cervical
 
     # ------------------------------------------------------------------------
     def pre_processing_chronic(self):
-        chronic = self.datasets["ckd-dataset-v2"].copy()
-        return
+        chronic = self.datasets["kidney_disease"].copy()
+        chronic.drop("id", axis=1, inplace=True)
+        chronic.columns = [
+            "age",
+            "blood_pressure",
+            "specific_gravity",
+            "albumin",
+            "sugar",
+            "red_blood_cells",
+            "pus_cell",
+            "pus_cell_clumps",
+            "bacteria",
+            "blood_glucose_random",
+            "blood_urea",
+            "serum_creatinine",
+            "sodium",
+            "potassium",
+            "haemoglobin",
+            "packed_cell_volume",
+            "white_blood_cell_count",
+            "red_blood_cell_count",
+            "hypertension",
+            "diabetes_mellitus",
+            "coronary_artery_disease",
+            "appetite",
+            "peda_edema",
+            "aanemia",
+            "target",
+        ]
+
+        chronic = self._prep.ordinal_encoder(
+            chronic,
+            [
+                "aanemia",
+                "peda_edema",
+                "appetite",
+                "coronary_artery_disease",
+                "diabetes_mellitus",
+                "hypertension",
+                "bacteria",
+                "pus_cell",
+                "pus_cell_clumps",
+                "target",
+            ],
+        )
+
+        return chronic.dropna()
 
     # ------------------------------------------------------------------------
     def pre_processing_stalog_heart(self):
-        stalog = self.datasets[""].copy()
-        return
+        stalog = self.datasets["heart"].copy()
+        stalog = self._prep.label_encoder(stalog, ["target"])
+
+        return stalog
 
     # ------------------------------------------------------------------------
     def pre_processing_stroke(self):
