@@ -94,12 +94,16 @@ class BenchmarkPipeline:
     def pre_processing_stroke(self):
         stroke = self.datasets["healthcare-dataset-stroke-data"].copy()
         stroke.drop("id", axis=1, inplace=True)
-        stroke = self._prep.ordinal_encoder(stroke, ["gender",
-                                                     "ever_married",
-                                                     "smoking_status"])
-        stroke = self._prep.one_hot_encode(stroke, ["Residence_type",
-                                                    "work_type",
-                                                    ])
+        stroke = self._prep.ordinal_encoder(
+            stroke, ["gender", "ever_married", "smoking_status"]
+        )
+        stroke = self._prep.one_hot_encode(
+            stroke,
+            [
+                "Residence_type",
+                "work_type",
+            ],
+        )
         return stroke.dropna()
 
     # ------------------------------------------------------------------------
@@ -153,6 +157,25 @@ class BenchmarkPipeline:
         df = self.datasets["covid"].copy()
         df = df.drop(columns="id_notificacao")
         return df
+
+    # ------------------------------------------------------------------------
+    def cria_tabela_sintetico(self):
+        tabela_resultados = {}
+
+        syn_cat = pd.read_csv("./data/synthetic/synthetic-cat.csv")
+        syn_cont = pd.read_csv("./data/synthetic/synthetic-cont.csv")
+        syn_cont_cat = pd.read_csv("./data/synthetic/synthetic-cont-cat.csv")
+
+        tabela_resultados["datasets"] = [syn_cat, syn_cont, syn_cont_cat]
+
+        tabela_resultados["nome_datasets"] = [
+            "synthetic-cont-cat",
+            "synthetic-cat",
+            "synthetic-cont",
+        ]
+        tabela_resultados["missing_rate"] = [5, 10, 20]
+
+        return tabela_resultados
 
     # ------------------------------------------------------------------------
     def cria_tabela(self):
