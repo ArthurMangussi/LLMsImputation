@@ -29,8 +29,8 @@ class BenchmarkPipeline:
                 "STDs: Time since last diagnosis",
                 "STDs: Time since first diagnosis",
             ]
-        )
-        return cervical
+        ).replace("?", np.nan)
+        return cervical.dropna()
 
     # ------------------------------------------------------------------------
     def pre_processing_chronic(self):
@@ -76,6 +76,7 @@ class BenchmarkPipeline:
                 "bacteria",
                 "pus_cell",
                 "pus_cell_clumps",
+                "red_blood_cells",
                 "target",
             ],
         )
@@ -92,7 +93,14 @@ class BenchmarkPipeline:
     # ------------------------------------------------------------------------
     def pre_processing_stroke(self):
         stroke = self.datasets["healthcare-dataset-stroke-data"].copy()
-        return
+        stroke.drop("id", axis=1, inplace=True)
+        stroke = self._prep.ordinal_encoder(stroke, ["gender",
+                                                     "ever_married",
+                                                     "smoking_status"])
+        stroke = self._prep.one_hot_encode(stroke, ["Residence_type",
+                                                    "work_type",
+                                                    ])
+        return stroke.dropna()
 
     # ------------------------------------------------------------------------
     def pre_processing_hepatitis(self):

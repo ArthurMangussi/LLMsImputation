@@ -12,7 +12,8 @@ from utils.MyPreprocessing import PreprocessingDatasets
 from utils.MeLogSingle import MeLogger
 from utils.MyResults import AnalysisResults
 
-from mdatagen.multivariate.mMAR import mMAR
+
+from mdatagen.multivariate.mMNAR import mMNAR
 
 from time import perf_counter
 import os
@@ -68,15 +69,21 @@ def pipeline_benchmark_imputation(
                 X_teste_norm = PreprocessingDatasets.normaliza_dados(scaler, X_teste)
 
                 # Geração dos missing values em cada conjunto de forma independente
-                impt_md_train = mMAR(
-                    X=X_treino_norm, y=y_treino, n_xmiss=X_treino_norm.shape[1]
+                impt_md_train = mMNAR(
+                    X=X_treino_norm, y=y_treino, n_xmiss=X_teste_norm.shape[1],
+                    threshold=1
                 )
-                X_treino_norm_md = impt_md_train.correlated(missing_rate=md)
-
-                impt_md_test = mMAR(
-                    X=X_teste_norm, y=y_teste, n_xmiss=X_teste_norm.shape[1]
+                X_treino_norm_md = impt_md_train.random(missing_rate=md)
+                X_treino_norm_md = X_treino_norm_md.drop(columns="target")
+                
+                
+                impt_md_test = mMNAR(
+                    X=X_teste_norm, y=y_teste,n_xmiss=X_teste_norm.shape[1],
+                    threshold=1
                 )
-                X_teste_norm_md = impt_md_test.correlated(missing_rate=md)
+                X_teste_norm_md = impt_md_test.random(missing_rate=md)
+                X_teste_norm_md = X_teste_norm_md.drop(columns="target")
+                
 
                 inicio_imputation = perf_counter()
 
@@ -172,6 +179,10 @@ if __name__ == "__main__":
     pipeline = BenchmarkPipeline(datasets)
     tabela_resultados = pipeline.cria_tabela()
 
-    mecanismo = "MAR"
+    mecanismo = "MNAR"
 
+    pipeline_benchmark_imputation("softImpute", mecanismo, tabela_resultados)
     pipeline_benchmark_imputation("knn", mecanismo, tabela_resultados)
+    pipeline_benchmark_imputation("missForest", mecanismo, tabela_resultados)
+    pipeline_benchmark_imputation("mice", mecanismo, tabela_resultados)    
+    pipeline_benchmark_imputation("saei", mecanismo, tabela_resultados)
