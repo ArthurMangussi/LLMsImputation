@@ -152,6 +152,6 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
 
     pipeline_benchmark_imputation(
-        "gemini-3-flash-preview", mecanismo, tabela_resultados
+        "tngtech/deepseek-r1t-chimera:free", mecanismo, tabela_resultados
     )
-    pipeline_benchmark_imputation("gemini-2.5-flash-lite", mecanismo, tabela_resultados)
+    
