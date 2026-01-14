@@ -104,11 +104,13 @@ def llm_impute(
 
         for row_start in range(0, n_rows, batch_row):
             row_end = min(row_start + batch_row, n_rows)
+            actual_start = row_start
+            if (row_end - row_start) < batch_row and n_rows >= batch_row:
+                actual_start = row_end - batch_row 
 
             for col_start in range(0, n_cols, batch_col):
                 col_end = min(col_start + batch_col, n_cols)
-
-                batch = X_teste_norm_md.iloc[row_start:row_end, col_start:col_end]
+                batch_to_prompt = X_teste_norm_md.iloc[actual_start:row_end, col_start:col_end]
 
                 match api:
                     case "open_router":
@@ -119,7 +121,7 @@ def llm_impute(
                         response = client.responses.create(
                             model=model_name,
                             temperature=0.1,
-                            input=adjust_prompt(dataset_name=dataset_name, missing_data=batch),
+                            input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
                         )
                         imputed_value_str = response.output[0].content[0].text
 
@@ -128,7 +130,7 @@ def llm_impute(
                         response = client.models.generate_content(
                             model=model_name,
                             contents=adjust_prompt(
-                                dataset_name=dataset_name, missing_data=batch
+                                dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
                             config=types.GenerateContentConfig(temperature=0.1),
                         )
@@ -137,11 +139,13 @@ def llm_impute(
 
                 # Converte CSV retornado pela LLM em DataFrame
                 df_imputed = clean_and_parse_llm_data(response_text=imputed_value_str,
-                                                      expected_shape=batch.shape)
+                                                      expected_shape=batch_to_prompt.shape)
                     
 
+                rows_needed = row_end - row_start
+                clean_imputed_data = df_imputed.iloc[-rows_needed:, :]
                 # Escreve no output
-                output.iloc[row_start:row_end, col_start:col_end] = df_imputed.values
+                output.iloc[row_start:row_end, col_start:col_end] = clean_imputed_data.values
 
     except Exception as e:
         _logger.error(
