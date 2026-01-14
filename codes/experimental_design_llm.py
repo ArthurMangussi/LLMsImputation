@@ -14,7 +14,7 @@ from mdatagen.multivariate.mMNAR import mMNAR
 from time import perf_counter
 import os
 
-from algorithms.llm import DATASET_NAMES, gemini_impute
+from algorithms.llm import DATASET_NAMES, llm_impute
 
 
 def pipeline_benchmark_imputation(
@@ -81,7 +81,7 @@ def pipeline_benchmark_imputation(
                 inicio_imputation = perf_counter()
 
                 # Inicializando e treinando o modelo
-                df_output_md_teste = gemini_impute(
+                df_output_md_teste = llm_impute(
                     dataset_name=DATASET_NAMES[nome],
                     X_teste_norm_md=X_teste_md,
                     model_name=model_impt,

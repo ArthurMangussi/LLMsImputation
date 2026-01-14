@@ -2,8 +2,8 @@ import pandas as pd
 from google import genai
 from google.genai import types
 import StringIO
-import numpy as np
 
+from openai import OpenAI
 from utils.MeLogSingle import MeLogger
 
 _logger = MeLogger()
@@ -40,33 +40,53 @@ def adjust_prompt(dataset_name: str, missing_data: pd.DataFrame):
     return prompt
 
 
-def gemini_impute(
+def llm_impute(
     dataset_name: str,
     X_teste_norm_md: pd.DataFrame,
-    model_name: str = "gemini-3-flash-preview",
+    model_name: str,
+    api: str = "open_router",
 ) -> str:
+    """
+    Método para realizar a imputação com Large Language Models (LLMs),
+    utilizando a API do Gemini ou OpenRouter
 
+    Args:
+        - dataset_name (str)
+        - X_teste_norm_md (pd.DataFrame)
+        - model_name (str)
+        - api (str)
+    """
     try:
-        client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM")
-    except Exception as e:
-        _logger.error(f"Error initializing the client: {e}")
+        output = X_teste_norm_md.copy()
 
-    output = X_teste_norm_md.copy()
+        batch_row = 50
+        batch_col = 10
 
-    batch_row = 50
-    batch_col = 10
+        n_rows, n_cols = X_teste_norm_md.shape
 
-    n_rows, n_cols = X_teste_norm_md.shape
+        for row_start in range(0, n_rows, batch_row):
+            row_end = min(row_start + batch_row, n_rows)
 
-    for row_start in range(0, n_rows, batch_row):
-        row_end = min(row_start + batch_row, n_rows)
+            for col_start in range(0, n_cols, batch_col):
+                col_end = min(col_start + batch_col, n_cols)
 
-        for col_start in range(0, n_cols, batch_col):
-            col_end = min(col_start + batch_col, n_cols)
+                batch = X_teste_norm_md.iloc[row_start:row_end, col_start:col_end]
 
-            batch = X_teste_norm_md.iloc[row_start:row_end, col_start:col_end]
+        match api:
+            case "open_router":
+                client = OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key="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",
+                )
+                response = client.responses.create(
+                    model=model_name,
+                    temperature=0.1,
+                    input=adjust_prompt(dataset_name=dataset_name, missing_data=batch),
+                )
+                imputed_value_str = response.output[0].content[0].text
 
-            try:
+            case "gemini":
+                client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM")
                 response = client.models.generate_content(
                     model=model_name,
                     contents=adjust_prompt(
@@ -77,40 +97,39 @@ def gemini_impute(
 
                 imputed_value_str = response.text.strip()
 
-                # Converte CSV retornado pela LLM em DataFrame
-                try:
-                    # Tenta ler como CSV com vírgula
-                    df_imputed = pd.read_csv(
-                        StringIO(imputed_value_str),
-                        sep=",",
-                        engine="python",
-                        header=None,
-                    )
-                    if df_imputed.shape[1] == 1:
-                        raise ValueError("Not a real CSV")
+        # Converte CSV retornado pela LLM em DataFrame
+        try:
+            # Tenta ler como CSV com vírgula
+            df_imputed = pd.read_csv(
+                StringIO(imputed_value_str),
+                sep=",",
+                engine="python",
+                header=None,
+            )
+            if df_imputed.shape[1] == 1:
+                raise ValueError("Not a real CSV")
 
-                except Exception:
-                    # Fallback: separação por espaço
-                    df_imputed = pd.read_csv(
-                        StringIO(imputed_value_str),
-                        sep=r"\s+",
-                        engine="python",
-                        header=None,
-                    )
+        except Exception:
+            # Fallback: separação por espaço
+            df_imputed = pd.read_csv(
+                StringIO(imputed_value_str),
+                sep=r"\s+",
+                engine="python",
+                header=None,
+            )
 
-                # Validação de shape
-                if df_imputed.shape != batch.shape:
-                    raise ValueError(
-                        f"Shape inválido retornado pela LLM. "
-                        f"Esperado {batch.shape}, recebido {df_imputed.shape}"
-                    )
+            # Validação de shape
+        if df_imputed.shape != batch.shape:
+            raise ValueError(
+                f"Shape inválido retornado pela LLM. "
+                f"Esperado {batch.shape}, recebido {df_imputed.shape}"
+            )
 
-                # Escreve no output
-                output.iloc[row_start:row_end, col_start:col_end] = df_imputed.values
+        # Escreve no output
+        output.iloc[row_start:row_end, col_start:col_end] = df_imputed.values
 
-            except Exception as e:
-                _logger.error(
-                    f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
-                )
-
+    except Exception as e:
+        _logger.error(
+            f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
+        )
     return output
