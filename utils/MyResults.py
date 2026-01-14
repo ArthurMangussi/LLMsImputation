@@ -13,7 +13,7 @@ import numpy as np
 
 from utils.MyPreprocessing import PreprocessingDatasets
 
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 import warnings
 
 from utils.MeLogSingle import MeLogger
@@ -46,6 +46,40 @@ class AnalysisResults:
             return AnalysisResults.correct_predictions(y_true=original.iloc[linhas_nan, missing_id],
                                                        y_pred=resposta.iloc[linhas_nan, missing_id])
 
+    # ------------------------------------------------------------------------
+    @staticmethod
+    def gera_resultado_multiva_nrmse(
+        resposta,
+        dataset_normalizado_md,
+        dataset_normalizado_original,
+    ):
+        nrmses = []
+        features = dataset_normalizado_md.columns[
+            dataset_normalizado_md.isna().any()
+        ].tolist()
+
+        for feature in features:
+            missing_id = dataset_normalizado_md.columns.get_loc(feature)
+            linhas_nan = dataset_normalizado_md.iloc[:, missing_id][
+                dataset_normalizado_md.iloc[:, missing_id].isna()
+            ].index
+            original = dataset_normalizado_original.copy()
+
+            y_true = original.iloc[linhas_nan, missing_id]
+            y_pred = resposta.iloc[linhas_nan, missing_id]
+
+            # Cálculo do RMSE
+            rmse = root_mean_squared_error(y_true, y_pred)
+            
+            # Normalização pela amplitude (Max - Min) da coluna original
+            amplitude = original.iloc[:, missing_id].max() - original.iloc[:, missing_id].min()
+            
+            # Evita divisão por zero
+            nrmse = rmse / amplitude if amplitude != 0 else rmse
+            nrmses.append(nrmse)
+
+        return np.mean(nrmses), np.std(nrmses)
+    
     # ------------------------------------------------------------------------
     @staticmethod
     def gera_resultado_multiva(

@@ -61,7 +61,7 @@ def adjust_prompt(dataset_name: str, missing_data: pd.DataFrame):
     prompt = f"""
     You are an expert data analyst. I am providing a subset of the {dataset_name} Dataset.
     Task: Use your knowledge of this specific dataset's statistical properties (feature ranges, class distributions, and correlations) to perform data imputation.
-    Constraint: DO NOT execute Python code. DO NOT provide any conversational text.
+    Constraint: DO NOT execute Python code. DO NOT provide any conversational text. Do NOT return any NaN or ? value.
 
     The matrix below contains missing values. Impute them to be as consistent as possible with the original dataset.
     Matrix:
@@ -157,4 +157,5 @@ def llm_impute(
         _logger.error(
             f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
         )
+        raise ValueError(e)
     return output

@@ -110,7 +110,7 @@ def pipeline_benchmark_imputation(
                 (
                     mae_teste_mean,
                     mae_teste_std,
-                ) = AnalysisResults.gera_resultado_multiva(
+                ) = AnalysisResults.gera_resultado_multiva_nrmse(
                     resposta=output_md_test,
                     dataset_normalizado_md=X_teste_md,
                     dataset_normalizado_original=X_teste,
