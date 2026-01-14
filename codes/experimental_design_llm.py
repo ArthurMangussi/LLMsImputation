@@ -18,7 +18,7 @@ from algorithms.llm import DATASET_NAMES, llm_impute
 
 
 def pipeline_benchmark_imputation(
-    model_impt: str, mecanismo: str, tabela_resultados: dict
+    model_impt: str, mecanismo: str, tabela_resultados: dict, api:str="open_router"
 ):
     "Main pipeline to perform imputation MCAR multivariate mechanism."
     _logger = MeLogger()
@@ -85,6 +85,7 @@ def pipeline_benchmark_imputation(
                     dataset_name=DATASET_NAMES[nome],
                     X_teste_norm_md=X_teste_md,
                     model_name=model_impt,
+                   api=api
                 )
 
                 fim_imputation = perf_counter()
@@ -117,8 +118,15 @@ def pipeline_benchmark_imputation(
                 data_imputed = pd.DataFrame(output_md_test.copy(), columns=X.columns)
                 data_imputed["target"] = y_teste
 
+                mapped_llms = {
+                "tngtech/deepseek-r1t-chimera:free": "deepseek",
+                "gemini-3-flash-preview": "gemini3",
+                "nvidia/nemotron-3-nano-30b-a3b:free":"nvidia",
+                "xiaomi/mimo-v2-flash:free":"xiamoi"
+            }
+                
                 data_imputed.to_csv(
-                    f"./results/{model_impt}/Datasets/{mecanismo}_Multivariado/{nome}_{model_impt}_fold{fold}_md{md}.csv",
+                    f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_fold{fold}_md{md}.csv",
                     index=False,
                 )
                 fold += 1
@@ -131,11 +139,12 @@ def pipeline_benchmark_imputation(
                     resultados_final, 1, fold
                 )
             )
+
             resultados_mecanismo.to_csv(
-                f"./results/{model_impt}/Resultados/{mecanismo}_Multivariado/{nome}_{model_impt}_{mecanismo}.csv",
+                f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv",
             )
             pd.DataFrame({"Tempos": imputation_time}).to_csv(
-                f"./results/{model_impt}/Tempos/{mecanismo}_Multivariado/{nome}_{model_impt}_{mecanismo}.csv"
+                f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv"
             )
 
     return _logger.info(f"Imputation_{model_impt}_done!")
