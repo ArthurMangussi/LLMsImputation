@@ -16,6 +16,12 @@ import os
 
 from algorithms.llm import DATASET_NAMES, llm_impute
 
+mapped_llms = {
+                "tngtech/deepseek-r1t-chimera:free": "deepseek",
+                "gemini-3-flash-preview": "gemini3",
+                "nvidia/nemotron-3-nano-30b-a3b:free":"nvidia",
+                "xiaomi/mimo-v2-flash:free":"xiamoi"
+            }
 
 def pipeline_benchmark_imputation(
     model_impt: str, mecanismo: str, tabela_resultados: dict, api:str="open_router"
@@ -25,13 +31,13 @@ def pipeline_benchmark_imputation(
 
     # Cria diretórios para salvar os resultados do experimento
     os.makedirs(
-        f"./results/{model_impt}/Tempos/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{model_impt}/Datasets/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{model_impt}/Resultados/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
     )
 
     for dados, nome in zip(
@@ -48,7 +54,7 @@ def pipeline_benchmark_imputation(
             _logger.info(f"Dataset = {nome} com MD = {md} no {model_impt}\n")
 
             fold = 0
-            cv = StratifiedKFold()
+            cv = StratifiedKFold(n_splits=5)
             x_cv = X.values
 
             for train_index, test_index in cv.split(x_cv, y):
@@ -110,20 +116,13 @@ def pipeline_benchmark_imputation(
                     dataset_normalizado_original=X_teste,
                 )
 
-                tabela_resultados[f"{model_impt}/{nome}/{md}/{fold}/MAE"] = {
+                tabela_resultados[f"{mapped_llms[model_impt]}/{nome}/{md}/{fold}/MAE"] = {
                     "teste": round(mae_teste_mean, 3)
                 }
 
                 # Dataset imputado
                 data_imputed = pd.DataFrame(output_md_test.copy(), columns=X.columns)
                 data_imputed["target"] = y_teste
-
-                mapped_llms = {
-                "tngtech/deepseek-r1t-chimera:free": "deepseek",
-                "gemini-3-flash-preview": "gemini3",
-                "nvidia/nemotron-3-nano-30b-a3b:free":"nvidia",
-                "xiaomi/mimo-v2-flash:free":"xiamoi"
-            }
                 
                 data_imputed.to_csv(
                     f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_fold{fold}_md{md}.csv",
@@ -161,6 +160,6 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
 
     pipeline_benchmark_imputation(
-        "tngtech/deepseek-r1t-chimera:free", mecanismo, tabela_resultados
+        "xiaomi/mimo-v2-flash:free", mecanismo, tabela_resultados
     )
     

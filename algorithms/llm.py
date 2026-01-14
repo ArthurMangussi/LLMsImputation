@@ -117,7 +117,7 @@ def llm_impute(
             for col_start in range(0, n_cols, batch_col):
                 col_end = min(col_start + batch_col, n_cols)
                 batch_to_prompt = X_teste_norm_md.iloc[actual_start:row_end, col_start:col_end]
-                _logger.info("Batch = ", iter_batch)
+                _logger.info(f"Batch = {iter_batch}")
                 match api:
                     case "open_router":
                         client = OpenAI(
