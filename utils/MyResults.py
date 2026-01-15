@@ -72,7 +72,7 @@ class AnalysisResults:
             rmse = root_mean_squared_error(y_true, y_pred)
             
             # Normalização pela amplitude (Max - Min) da coluna original
-            amplitude = original.iloc[:, missing_id].max() - original.iloc[:, missing_id].min()
+            amplitude = float(original.iloc[:, missing_id].max()) - float(original.iloc[:, missing_id].min())
             
             # Evita divisão por zero
             nrmse = rmse / amplitude if amplitude != 0 else rmse

@@ -43,12 +43,12 @@ def clean_and_parse_llm_data(response_text, expected_shape):
             )
 
             # Se o shape bater (ou se for compatível ignorando o index), paramos aqui
-            if df_imputed.shape == expected_shape:
-                return df_imputed
+            # if df_imputed.shape == expected_shape:
+            return df_imputed
             
             # Caso a LLM tenha retornado uma coluna de índice extra (comum)
-            if df_imputed.shape[1] == expected_shape[1] + 1:
-                return df_imputed.iloc[:, 1:] # Remove a primeira coluna (índice)
+            #elif df_imputed.shape[1] == expected_shape[1] + 1:
+            #    return df_imputed.iloc[:, 1:] # Remove a primeira coluna (índice)
 
         except Exception:
             continue
@@ -126,7 +126,7 @@ def llm_impute(
                         )
                         response = client.responses.create(
                             model=model_name,
-                            temperature=0.1,
+                            temperature=0.05,
                             input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
                         )
                         imputed_value_str = response.output[0].content[0].text
@@ -138,7 +138,7 @@ def llm_impute(
                             contents=adjust_prompt(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
-                            config=types.GenerateContentConfig(temperature=0.1),
+                            config=types.GenerateContentConfig(temperature=0.05),
                         )
 
                         imputed_value_str = response.text.strip()
@@ -158,4 +158,10 @@ def llm_impute(
             f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
         )
         raise ValueError(e)
+    
+    # Lógica Similar a Pré-Imputação
+    # Caso tenha NaN, substituir por zero
+    if output.isna().any().any():
+        output = output.fillna(value=float(0.0))
+
     return output

@@ -9,7 +9,7 @@ from utils.MyUtils import MyPipeline
 from utils.MeLogSingle import MeLogger
 from utils.MyResults import AnalysisResults
 
-from mdatagen.multivariate.mMNAR import mMNAR
+from mdatagen.multivariate.mMCAR import mMCAR
 
 from time import perf_counter
 import os
@@ -40,16 +40,15 @@ def pipeline_benchmark_imputation(
         f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
     )
 
-    for dados, nome in zip(
-        tabela_resultados["datasets"], tabela_resultados["nome_datasets"]
-    ):
-        df = dados.copy()
-        X = df.drop(columns="target")
-        y = df["target"].values
-        binary_features = MyPipeline.get_binary_features(data=df)
-        imputation_time = {}
-
-        for md in tabela_resultados["missing_rate"]:
+    for md in tabela_resultados["missing_rate"]:
+        for dados, nome in zip(
+            tabela_resultados["datasets"], tabela_resultados["nome_datasets"]
+        ):
+            df = dados.copy()
+            X = df.drop(columns="target")
+            y = df["target"].values
+            binary_features = MyPipeline.get_binary_features(data=df)
+            imputation_time = {}
 
             _logger.info(f"Dataset = {nome} com MD = {md} no {model_impt}\n")
 
@@ -66,24 +65,22 @@ def pipeline_benchmark_imputation(
                 X_teste = pd.DataFrame(x_teste, columns=X.columns)
 
                 # Geração dos missing values em cada conjunto de forma independente
-                impt_md_train = mMNAR(
+                impt_md_train = mMCAR(
                     X=X_treino,
                     y=y_treino,
-                    n_xmiss=X_treino.shape[1],
-                    threshold=1,
+                    missing_rate=md,
+                    seed=42
                 )
-                X_treino_md = impt_md_train.random(missing_rate=md)
-                X_treino_md = X_treino_md.drop(columns="target")
+                X_treino_md = impt_md_train.random()
+                
 
-                impt_md_test = mMNAR(
+                impt_md_test = mMCAR(
                     X=X_teste,
                     y=y_teste,
-                    n_xmiss=X_teste.shape[1],
-                    threshold=1,
+                    missing_rate=md
                 )
-                X_teste_md = impt_md_test.random(missing_rate=md)
-                X_teste_md = X_teste_md.drop(columns="target")
-
+                X_teste_md = impt_md_test.random()
+               
                 inicio_imputation = perf_counter()
 
                 # Inicializando e treinando o modelo
@@ -157,7 +154,7 @@ if __name__ == "__main__":
     pipeline = BenchmarkPipeline(datasets)
     tabela_resultados = pipeline.cria_tabela()
 
-    mecanismo = "MNAR"
+    mecanismo = "MCAR"
 
     pipeline_benchmark_imputation(
         "xiaomi/mimo-v2-flash:free", mecanismo, tabela_resultados
