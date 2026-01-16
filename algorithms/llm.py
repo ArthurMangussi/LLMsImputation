@@ -100,6 +100,16 @@ def llm_impute(
         - api (str)
     """
     try:
+        match api:
+            case "open_router":
+                client = OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key="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",
+                )
+
+            case "gemini":
+                client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM",http_options={'timeout': 10*60*1000})
+                        
         output = X_teste_norm_md.copy()
 
         batch_row = 50
@@ -120,10 +130,7 @@ def llm_impute(
                 _logger.info(f"Batch = {iter_batch}")
                 match api:
                     case "open_router":
-                        client = OpenAI(
-                            base_url="https://openrouter.ai/api/v1",
-                            api_key="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",
-                        )
+                        
                         response = client.responses.create(
                             model=model_name,
                             temperature=0.05,
@@ -132,16 +139,20 @@ def llm_impute(
                         imputed_value_str = response.output[0].content[0].text
 
                     case "gemini":
-                        client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM",http_options={'timeout': 120000})
+                        
                         response = client.models.generate_content(
                             model=model_name,
                             contents=adjust_prompt(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
-                            config=types.GenerateContentConfig(temperature=0.05),
+                            config=types.GenerateContentConfig(temperature=0.1,
+                                                               seed=42,
+                                                               thinking_config=types.ThinkingLevel.LOW,
+                                                               top_p=0.95)
                         )
 
                         imputed_value_str = response.text.strip()
+                        
 
                 # Converte CSV retornado pela LLM em DataFrame
                 df_imputed = clean_and_parse_llm_data(response_text=imputed_value_str,
@@ -151,8 +162,16 @@ def llm_impute(
                 rows_needed = row_end - row_start
                 clean_imputed_data = df_imputed.iloc[-rows_needed:, :]
                 # Escreve no output
-                output.iloc[row_start:row_end, col_start:col_end] = clean_imputed_data.values
+                actual_rows = clean_imputed_data.shape[0]
+
+                if actual_rows != rows_needed:
+                    # Caso retorne um shape diferente do esperado, retorna os valores originais
+                    # serão preenchidos com zero
+                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[row_start:row_end, col_start:col_end].values
+                else:
+                    output.iloc[row_start:row_end, col_start:col_end] = clean_imputed_data.values
                 iter_batch +=1
+    
     except Exception as e:
         _logger.error(
             f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
@@ -160,8 +179,12 @@ def llm_impute(
         raise ValueError(e)
     
     # Lógica Similar a Pré-Imputação
-    # Caso tenha NaN, substituir por zero
+    
     if output.isna().any().any():
+        # Caso tenha NaN, substituir pela média
         output = output.fillna(value=float(0.0))
+
+        # Para um framework, podemos adotar um Imputador (ex: MICE)
+        # Para performar imputação aqui
 
     return output

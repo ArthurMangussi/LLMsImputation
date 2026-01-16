@@ -182,21 +182,21 @@ class BenchmarkPipeline:
         tabela_resultados = {}
 
         tabela_resultados["datasets"] = [
-            self.pima,
-            self.cleveland,
+            #self.pima,
+            #self.cleveland,
             self.wiscosin,
             self.parkinsons,
             self.hepatitis,
             self.mathernal_risk,
-            self.cervical,
+            self.cervical, 
             self.chronic,
             self.stalog,
             self.stroke,
         ]
 
         tabela_resultados["nome_datasets"] = [
-            "pima",
-            "cleveland",
+            #"pima",
+            #"cleveland",
             "wiscosin",
             "parkinsons",
             "hepatitis",

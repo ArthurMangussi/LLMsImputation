@@ -17,10 +17,11 @@ import os
 from algorithms.llm import DATASET_NAMES, llm_impute
 
 mapped_llms = {
-                "tngtech/deepseek-r1t-chimera:free": "deepseek",
+                "deepseek/deepseek-r1-0528:free": "deepseek",
                 "gemini-3-flash-preview": "gemini3",
-                "nvidia/nemotron-3-nano-30b-a3b:free":"nvidia",
-                "xiaomi/mimo-v2-flash:free":"xiamoi"
+                "mistralai/devstral-2512:free": "mistral",
+                "xiaomi/mimo-v2-flash:free":"xiamoi",
+                
             }
 
 def pipeline_benchmark_imputation(
@@ -159,6 +160,6 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
 
     pipeline_benchmark_imputation(
-        "xiaomi/mimo-v2-flash:free", mecanismo, tabela_resultados
+        "deepseek/deepseek-r1-0528:free", mecanismo, tabela_resultados
     )
     
