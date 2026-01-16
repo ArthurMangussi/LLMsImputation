@@ -30,7 +30,7 @@ class BenchmarkPipeline:
                 "STDs: Time since first diagnosis",
             ]
         ).replace("?", np.nan)
-        return cervical.dropna()
+        return cervical.dropna().astype(float)
 
     # ------------------------------------------------------------------------
     def pre_processing_chronic(self):
@@ -184,26 +184,26 @@ class BenchmarkPipeline:
         tabela_resultados["datasets"] = [
             #self.pima,
             #self.cleveland,
-            self.wiscosin,
-            self.parkinsons,
-            self.hepatitis,
-            self.mathernal_risk,
-            self.cervical, 
-            self.chronic,
-            self.stalog,
+            #self.wiscosin,
+            #self.parkinsons,
+            #self.hepatitis,
+            #self.mathernal_risk,
+            
+            #self.chronic,
+            #self.stalog,
             self.stroke,
         ]
 
         tabela_resultados["nome_datasets"] = [
             #"pima",
             #"cleveland",
-            "wiscosin",
-            "parkinsons",
-            "hepatitis",
-            "mathernal_risk",
-            "cervical",
-            "chronic",
-            "stalog",
+            #"wiscosin",
+            #"parkinsons",
+            #"hepatitis",
+            #"mathernal_risk",
+            #"cervical",
+            #"chronic",
+            #"stalog",
             "stroke",
         ]
 

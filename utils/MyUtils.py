@@ -189,7 +189,7 @@ class MyPipeline:
             if binary_feature == "target":
                 continue
             imputed_dataset[binary_feature] = [
-                1.0 if valor >= 0.5 else 0.0
+                1.0 if float(valor) >= 0.5 else 0.0
                 for valor in imputed_dataset[binary_feature]
             ]
         return imputed_dataset

@@ -17,8 +17,9 @@ import os
 from algorithms.llm import DATASET_NAMES, llm_impute
 
 mapped_llms = {
-                "deepseek/deepseek-r1-0528:free": "deepseek",
+                
                 "gemini-3-flash-preview": "gemini3",
+                "gemini-2.5-flash-lite": "geminiLite",
                 "mistralai/devstral-2512:free": "mistral",
                 "xiaomi/mimo-v2-flash:free":"xiamoi",
                 
@@ -160,6 +161,15 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
 
     pipeline_benchmark_imputation(
-        "deepseek/deepseek-r1-0528:free", mecanismo, tabela_resultados
+        "gemini-2.5-flash-lite", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini"
+    )
+    pipeline_benchmark_imputation(
+        "gemini-3-flash-preview", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini"
     )
     

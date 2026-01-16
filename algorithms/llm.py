@@ -112,7 +112,7 @@ def llm_impute(
                         
         output = X_teste_norm_md.copy()
 
-        batch_row = 50
+        batch_row = 40
         batch_col = 10
         iter_batch = 0
 
@@ -146,7 +146,7 @@ def llm_impute(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
                             config=types.GenerateContentConfig(temperature=0.1,
-                                                               seed=42,
+                                                               
                                                                thinking_config=types.ThinkingLevel.LOW,
                                                                top_p=0.95)
                         )
@@ -181,8 +181,15 @@ def llm_impute(
     # Lógica Similar a Pré-Imputação
     
     if output.isna().any().any():
+        _logger.warning("LLM failed to impute some values. Applying fallback...")
         # Caso tenha NaN, substituir pela média
-        output = output.fillna(value=float(0.0))
+
+        for col in output.columns:
+            if output[col].isna().any():
+                mean_val = output[col].mean()
+                # If the whole column is NaN (LLM failed entirely), use 0
+                fill_val = mean_val if not pd.isna(mean_val) else 0
+                output[col] = output[col].fillna(fill_val)
 
         # Para um framework, podemos adotar um Imputador (ex: MICE)
         # Para performar imputação aqui
