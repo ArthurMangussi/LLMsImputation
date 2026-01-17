@@ -58,6 +58,7 @@ def clean_and_parse_llm_data(response_text, expected_shape):
 
 def adjust_prompt(dataset_name: str, missing_data: pd.DataFrame):
     headers_str = ", ".join(missing_data.columns)
+    string_missing = missing_data.to_string()
     prompt = f"""
     You are an expert data analyst. I am providing a subset of the {dataset_name} Dataset.
     Task: Use your knowledge of this specific dataset's statistical properties (feature ranges, class distributions, and correlations) to perform data imputation.
@@ -65,7 +66,7 @@ def adjust_prompt(dataset_name: str, missing_data: pd.DataFrame):
 
     The matrix below contains missing values. Impute them to be as consistent as possible with the original dataset.
     Matrix:
-    {missing_data}
+    {string_missing}
 
     Output Format:
     Return the complete imputed matrix inside a single Markdown code block. 
@@ -146,10 +147,8 @@ def llm_impute(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
                             config=types.GenerateContentConfig(temperature=0.1,
-                                                               
-                                                               thinking_config=types.ThinkingLevel.LOW,
-                                                               top_p=0.95)
-                        )
+                                                               thinking_config=types.ThinkingConfig(thinking_budget=0,)
+                                                               ))
 
                         imputed_value_str = response.text.strip()
                         
@@ -163,6 +162,10 @@ def llm_impute(
                 clean_imputed_data = df_imputed.iloc[-rows_needed:, :]
                 # Escreve no output
                 actual_rows = clean_imputed_data.shape[0]
+
+                for col in clean_imputed_data.columns:
+                    if col not in output.columns:
+                        clean_imputed_data = clean_imputed_data.drop(columns=col)
 
                 if actual_rows != rows_needed:
                     # Caso retorne um shape diferente do esperado, retorna os valores originais
@@ -186,7 +189,8 @@ def llm_impute(
 
         for col in output.columns:
             if output[col].isna().any():
-                mean_val = output[col].mean()
+                
+                mean_val = output[col].astype(float).mean()
                 # If the whole column is NaN (LLM failed entirely), use 0
                 fill_val = mean_val if not pd.isna(mean_val) else 0
                 output[col] = output[col].fillna(fill_val)

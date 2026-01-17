@@ -182,29 +182,27 @@ class BenchmarkPipeline:
         tabela_resultados = {}
 
         tabela_resultados["datasets"] = [
-            #self.pima,
-            #self.cleveland,
-            #self.wiscosin,
-            #self.parkinsons,
-            #self.hepatitis,
-            #self.mathernal_risk,
-            
-            #self.chronic,
-            #self.stalog,
-            self.stroke,
+            self.pima,
+            self.cleveland,
+            self.wiscosin,
+            self.parkinsons,
+            self.hepatitis,
+            self.mathernal_risk,
+            self.chronic,
+            self.stalog,
+            #self.stroke,
         ]
 
         tabela_resultados["nome_datasets"] = [
-            #"pima",
-            #"cleveland",
-            #"wiscosin",
-            #"parkinsons",
-            #"hepatitis",
-            #"mathernal_risk",
-            #"cervical",
-            #"chronic",
-            #"stalog",
-            "stroke",
+            "pima",
+            "cleveland",
+            "wiscosin",
+            "parkinsons",
+            "hepatitis",
+            "mathernal_risk",
+            "chronic",
+            "stalog",
+            #"stroke",
         ]
 
         tabela_resultados["missing_rate"] = [5, 

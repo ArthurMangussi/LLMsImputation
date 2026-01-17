@@ -8,7 +8,7 @@ from utils.MyMain import BenchmarkPipeline
 from utils.MyUtils import MyPipeline
 from utils.MeLogSingle import MeLogger
 from utils.MyResults import AnalysisResults
-
+from time import sleep
 from mdatagen.multivariate.mMNAR import mMNAR
 
 from time import perf_counter
@@ -58,6 +58,7 @@ def pipeline_benchmark_imputation(
             cv = StratifiedKFold(n_splits=5)
             x_cv = X.values
 
+            
             for train_index, test_index in cv.split(x_cv, y):
                 _logger.info(f"Fold = {fold}")
                 x_treino, x_teste = x_cv[train_index], x_cv[test_index]
@@ -161,15 +162,15 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
 
     pipeline_benchmark_imputation(
-        "gemini-2.5-flash-lite", 
+        "xiaomi/mimo-v2-flash:free", 
         mecanismo, 
         tabela_resultados,
-        api="gemini"
+        
     )
     pipeline_benchmark_imputation(
-        "gemini-3-flash-preview", 
+        "mistralai/devstral-2512:free", 
         mecanismo, 
         tabela_resultados,
-        api="gemini"
+        
     )
     
