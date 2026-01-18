@@ -110,6 +110,10 @@ def llm_impute(
 
             case "gemini":
                 client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM",http_options={'timeout': 10*60*1000})
+            case "gpt":
+                client = OpenAI(
+                    api_key="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",
+                )
                         
         output = X_teste_norm_md.copy()
 
@@ -139,16 +143,26 @@ def llm_impute(
                         )
                         imputed_value_str = response.output[0].content[0].text
 
-                    case "gemini":
+                    case "gpt":
                         
+                        response = client.responses.create(
+                            model=model_name,
+                            input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
+                        )
+                        imputed_value_str = response.output_text
+                    
+                    case "gemini":
+                        grounding_tool = types.Tool(
+                                google_search=types.GoogleSearch()
+                            )
                         response = client.models.generate_content(
                             model=model_name,
                             contents=adjust_prompt(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
                             config=types.GenerateContentConfig(temperature=0.1,
-                                                               thinking_config=types.ThinkingConfig(thinking_budget=0,)
-                                                               ))
+                                                               thinking_config=types.ThinkingConfig(thinking_budget=0),
+                                                               tools=[grounding_tool]))
 
                         imputed_value_str = response.text.strip()
                         
@@ -171,6 +185,11 @@ def llm_impute(
                     # Caso retorne um shape diferente do esperado, retorna os valores originais
                     # serão preenchidos com zero
                     output.iloc[row_start:row_end, col_start:col_end] = output.iloc[row_start:row_end, col_start:col_end].values
+                
+                elif clean_imputed_data.empty:
+                    _logger.warning("LLM provide an empty dataframe")
+                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[row_start:row_end, col_start:col_end].values
+                
                 else:
                     output.iloc[row_start:row_end, col_start:col_end] = clean_imputed_data.values
                 iter_batch +=1

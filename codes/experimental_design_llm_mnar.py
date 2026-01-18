@@ -10,7 +10,6 @@ from utils.MeLogSingle import MeLogger
 from utils.MyResults import AnalysisResults
 from time import sleep
 from mdatagen.multivariate.mMNAR import mMNAR
-
 from time import perf_counter
 import os
 
@@ -22,7 +21,8 @@ mapped_llms = {
                 "gemini-2.5-flash-lite": "geminiLite",
                 "mistralai/devstral-2512:free": "mistral",
                 "xiaomi/mimo-v2-flash:free":"xiamoi",
-                
+                "gpt-5-mini":"gptMini",
+                "gpt-5":"gpt5"               
             }
 
 def pipeline_benchmark_imputation(
@@ -87,15 +87,30 @@ def pipeline_benchmark_imputation(
                 X_teste_md = X_teste_md.drop(columns="target")
 
                 inicio_imputation = perf_counter()
+                attempt = 0
+                max_attempts = 3
+                while attempt < max_attempts:
+                    try:
+                        # Inicializando e treinando o modelo
+                        df_output_md_teste = llm_impute(
+                        dataset_name=DATASET_NAMES[nome],
+                        X_teste_norm_md=X_teste_md,
+                        model_name=model_impt,
+                    api=api
+                    )
+                        break   
+                    except  Exception as e:
+                        attempt += 1
+                        if attempt == max_attempts:
+                            _logger.info("Max retries reached. Service still unavailable.")
+                            raise
+            
+                        # Exponential backoff: 2, 4, 8, 16 seconds
+                        wait_time = 2 ** attempt 
+                        print(f"Model overloaded (503). Retrying in {wait_time}s... (Attempt {attempt}/{max_attempts})")
+                        sleep(wait_time)
 
-                # Inicializando e treinando o modelo
-                df_output_md_teste = llm_impute(
-                    dataset_name=DATASET_NAMES[nome],
-                    X_teste_norm_md=X_teste_md,
-                    model_name=model_impt,
-                   api=api
-                )
-
+                
                 fim_imputation = perf_counter()
 
                 imputation_time[f"{model_impt}_mr{md}_fold{fold}_{nome}"] = round(
@@ -160,17 +175,12 @@ if __name__ == "__main__":
     tabela_resultados = pipeline.cria_tabela()
 
     mecanismo = "MNAR"
-
+    
     pipeline_benchmark_imputation(
-        "xiaomi/mimo-v2-flash:free", 
+        "gpt-5-mini", 
         mecanismo, 
         tabela_resultados,
-        
-    )
-    pipeline_benchmark_imputation(
-        "mistralai/devstral-2512:free", 
-        mecanismo, 
-        tabela_resultados,
+        api="gpt"
         
     )
     
