@@ -8,6 +8,8 @@ import re
 from openai import OpenAI
 from utils.MeLogSingle import MeLogger
 
+import anthropic
+
 _logger = MeLogger()
 
 DATASET_NAMES = {
@@ -114,6 +116,8 @@ def llm_impute(
                 client = OpenAI(
                     api_key="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",
                 )
+            case "claude":
+                client = anthropic.Anthropic(api_key="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")
                         
         output = X_teste_norm_md.copy()
 
@@ -147,6 +151,7 @@ def llm_impute(
                         
                         response = client.responses.create(
                             model=model_name,
+                            #tools=[{"type": "web_search"}],
                             input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
                         )
                         imputed_value_str = response.output_text
@@ -162,10 +167,22 @@ def llm_impute(
                             ),
                             config=types.GenerateContentConfig(temperature=0.1,
                                                                thinking_config=types.ThinkingConfig(thinking_budget=0),
-                                                               tools=[grounding_tool]))
+                                                               #tools=[grounding_tool])
+                                                               ))
 
                         imputed_value_str = response.text.strip()
-                        
+                    
+                    case "claude":
+                        response = client.messages.create(
+                            model=model_name,
+                            max_tokens=10000,
+                            messages=[{"role": "user", 
+                                      "content": adjust_prompt(
+                                dataset_name=dataset_name, missing_data=batch_to_prompt
+                            )}],
+                            temperature=0.1,
+                        )
+                        imputed_value_str = response.content[0].text
 
                 # Converte CSV retornado pela LLM em DataFrame
                 df_imputed = clean_and_parse_llm_data(response_text=imputed_value_str,

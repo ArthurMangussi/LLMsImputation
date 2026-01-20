@@ -205,7 +205,7 @@ class BenchmarkPipeline:
             #"stroke",
         ]
 
-        tabela_resultados["missing_rate"] = [5, 
+        tabela_resultados["missing_rate"] = [#5, 
                                              10, 
                                              20
                                              ]

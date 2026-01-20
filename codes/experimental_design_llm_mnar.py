@@ -22,7 +22,10 @@ mapped_llms = {
                 "mistralai/devstral-2512:free": "mistral",
                 "xiaomi/mimo-v2-flash:free":"xiamoi",
                 "gpt-5-mini":"gptMini",
-                "gpt-5":"gpt5"               
+                "gpt-5":"gpt5",
+                "claude-sonnet-4-5":"claude45",
+                "tngtech/deepseek-r1t-chimera:free":"deepseek"
+                
             }
 
 def pipeline_benchmark_imputation(
@@ -177,10 +180,20 @@ if __name__ == "__main__":
     mecanismo = "MNAR"
     
     pipeline_benchmark_imputation(
+        "claude-sonnet-4-5", 
+        mecanismo, 
+        tabela_resultados,
+        api="claude" )
+    
+    pipeline_benchmark_imputation(
         "gpt-5-mini", 
         mecanismo, 
         tabela_resultados,
-        api="gpt"
-        
-    )
+        api="gpt" )
+    
+    pipeline_benchmark_imputation(
+        "gemini-3-flash-preview", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini" )
     
