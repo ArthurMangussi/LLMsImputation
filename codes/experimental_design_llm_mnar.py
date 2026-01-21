@@ -13,20 +13,7 @@ from mdatagen.multivariate.mMNAR import mMNAR
 from time import perf_counter
 import os
 
-from algorithms.llm import DATASET_NAMES, llm_impute
-
-mapped_llms = {
-                
-                "gemini-3-flash-preview": "gemini3",
-                "gemini-2.5-flash-lite": "geminiLite",
-                "mistralai/devstral-2512:free": "mistral",
-                "xiaomi/mimo-v2-flash:free":"xiamoi",
-                "gpt-5-mini":"gptMini",
-                "gpt-5":"gpt5",
-                "claude-sonnet-4-5":"claude45",
-                "tngtech/deepseek-r1t-chimera:free":"deepseek"
-                
-            }
+from algorithms.llm import DATASET_NAMES, llm_impute, MAPPED_LLMS
 
 def pipeline_benchmark_imputation(
     model_impt: str, mecanismo: str, tabela_resultados: dict, api:str="open_router"
@@ -36,13 +23,13 @@ def pipeline_benchmark_imputation(
 
     # Cria diretórios para salvar os resultados do experimento
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Tempos/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Datasets/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
     )
 
     for md in tabela_resultados["missing_rate"]:
@@ -160,10 +147,10 @@ def pipeline_benchmark_imputation(
             )
 
             resultados_mecanismo.to_csv(
-                f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv",
+                f"./results/{MAPPED_LLMS[model_impt]}/Resultados/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_{mecanismo}.csv",
             )
             pd.DataFrame({"Tempos": imputation_time}).to_csv(
-                f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv"
+                f"./results/{MAPPED_LLMS[model_impt]}/Tempos/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_{mecanismo}.csv"
             )
 
     return _logger.info(f"Imputation_{model_impt}_done!")

@@ -11,17 +11,10 @@ from utils.MyResults import AnalysisResults
 
 from mdatagen.multivariate.mMCAR import mMCAR
 
-from time import perf_counter
+from time import perf_counter, sleep
 import os
 
-from algorithms.llm import DATASET_NAMES, llm_impute
-
-mapped_llms = {
-                "tngtech/deepseek-r1t-chimera:free": "deepseek",
-                "gemini-3-flash-preview": "gemini3",
-                "nvidia/nemotron-3-nano-30b-a3b:free":"nvidia",
-                "xiaomi/mimo-v2-flash:free":"xiamoi"
-            }
+from algorithms.llm import DATASET_NAMES, llm_impute, MAPPED_LLMS
 
 def pipeline_benchmark_imputation(
     model_impt: str, mecanismo: str, tabela_resultados: dict, api:str="open_router"
@@ -31,13 +24,13 @@ def pipeline_benchmark_imputation(
 
     # Cria diretórios para salvar os resultados do experimento
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Tempos/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Datasets/{mecanismo}_Multivariado", exist_ok=True
     )
     os.makedirs(
-        f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
+        f"./results/{MAPPED_LLMS[model_impt]}/Resultados/{mecanismo}_Multivariado", exist_ok=True
     )
 
     for md in tabela_resultados["missing_rate"]:
@@ -82,15 +75,30 @@ def pipeline_benchmark_imputation(
                 X_teste_md = impt_md_test.random()
                
                 inicio_imputation = perf_counter()
+                attempt = 0
+                max_attempts = 3
+                while attempt < max_attempts:
+                    try:
+                        # Inicializando e treinando o modelo
+                        df_output_md_teste = llm_impute(
+                        dataset_name=DATASET_NAMES[nome],
+                        X_teste_norm_md=X_teste_md,
+                        model_name=model_impt,
+                    api=api
+                    )
+                        break   
+                    except  Exception as e:
+                        attempt += 1
+                        if attempt == max_attempts:
+                            _logger.info("Max retries reached. Service still unavailable.")
+                            raise
+            
+                        # Exponential backoff: 2, 4, 8, 16 seconds
+                        wait_time = 2 ** attempt 
+                        print(f"Model overloaded (503). Retrying in {wait_time}s... (Attempt {attempt}/{max_attempts})")
+                        sleep(wait_time)
 
-                # Inicializando e treinando o modelo
-                df_output_md_teste = llm_impute(
-                    dataset_name=DATASET_NAMES[nome],
-                    X_teste_norm_md=X_teste_md,
-                    model_name=model_impt,
-                   api=api
-                )
-
+                
                 fim_imputation = perf_counter()
 
                 imputation_time[f"{model_impt}_mr{md}_fold{fold}_{nome}"] = round(
@@ -113,7 +121,7 @@ def pipeline_benchmark_imputation(
                     dataset_normalizado_original=X_teste,
                 )
 
-                tabela_resultados[f"{mapped_llms[model_impt]}/{nome}/{md}/{fold}/MAE"] = {
+                tabela_resultados[f"{MAPPED_LLMS[model_impt]}/{nome}/{md}/{fold}/MAE"] = {
                     "teste": round(mae_teste_mean, 3)
                 }
 
@@ -122,7 +130,7 @@ def pipeline_benchmark_imputation(
                 data_imputed["target"] = y_teste
                 
                 data_imputed.to_csv(
-                    f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_fold{fold}_md{md}.csv",
+                    f"./results/{MAPPED_LLMS[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_fold{fold}_md{md}.csv",
                     index=False,
                 )
                 fold += 1
@@ -137,10 +145,10 @@ def pipeline_benchmark_imputation(
             )
 
             resultados_mecanismo.to_csv(
-                f"./results/{mapped_llms[model_impt]}/Resultados/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv",
+                f"./results/{MAPPED_LLMS[model_impt]}/Resultados/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_{mecanismo}.csv",
             )
             pd.DataFrame({"Tempos": imputation_time}).to_csv(
-                f"./results/{mapped_llms[model_impt]}/Tempos/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_{mecanismo}.csv"
+                f"./results/{MAPPED_LLMS[model_impt]}/Tempos/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_{mecanismo}.csv"
             )
 
     return _logger.info(f"Imputation_{model_impt}_done!")
@@ -157,6 +165,45 @@ if __name__ == "__main__":
     mecanismo = "MCAR"
 
     pipeline_benchmark_imputation(
-        "xiaomi/mimo-v2-flash:free", mecanismo, tabela_resultados
-    )
+        "claude-sonnet-4-5", 
+        mecanismo, 
+        tabela_resultados,
+        api="claude" )
+    
+    pipeline_benchmark_imputation(
+        "xiaomi/mimo-v2-flash:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    pipeline_benchmark_imputation(
+        "mistralai/devstral-2512:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    pipeline_benchmark_imputation(
+        "tngtech/deepseek-r1t-chimera:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    
+    pipeline_benchmark_imputation(
+        "gemini-3-flash-preview", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini" )
+    
+    pipeline_benchmark_imputation(
+        "gemini-2.5-flash-lite", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini" )
+    
+    pipeline_benchmark_imputation(
+        "gpt-5-mini", 
+        mecanismo, 
+        tabela_resultados,
+        api="gpt" )
     

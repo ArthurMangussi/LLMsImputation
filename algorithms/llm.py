@@ -12,6 +12,19 @@ import anthropic
 
 _logger = MeLogger()
 
+MAPPED_LLMS = {
+                
+                "gemini-3-flash-preview": "gemini3",
+                "gemini-2.5-flash-lite": "geminiLite",
+                "mistralai/devstral-2512:free": "mistral",
+                "xiaomi/mimo-v2-flash:free":"xiamoi",
+                "gpt-5-mini":"gptMini",
+                "gpt-5":"gpt5",
+                "claude-sonnet-4-5":"claude45",
+                "tngtech/deepseek-r1t-chimera:free":"deepseek"
+                
+            }
+
 DATASET_NAMES = {
     "pima": "Pima Indians Diabetes",
     "cleveland": "Heart Disease (Cleveland)",
