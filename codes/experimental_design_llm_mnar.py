@@ -123,7 +123,7 @@ def pipeline_benchmark_imputation(
                     dataset_normalizado_original=X_teste,
                 )
 
-                tabela_resultados[f"{mapped_llms[model_impt]}/{nome}/{md}/{fold}/MAE"] = {
+                tabela_resultados[f"{MAPPED_LLMS[model_impt]}/{nome}/{md}/{fold}/MAE"] = {
                     "teste": round(mae_teste_mean, 3)
                 }
 
@@ -132,7 +132,7 @@ def pipeline_benchmark_imputation(
                 data_imputed["target"] = y_teste
                 
                 data_imputed.to_csv(
-                    f"./results/{mapped_llms[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{mapped_llms[model_impt]}_fold{fold}_md{md}.csv",
+                    f"./results/{MAPPED_LLMS[model_impt]}/Datasets/{mecanismo}_Multivariado/{nome}_{MAPPED_LLMS[model_impt]}_fold{fold}_md{md}.csv",
                     index=False,
                 )
                 fold += 1
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     datasets = MyPipeline.carrega_datasets(diretorio)
 
     pipeline = BenchmarkPipeline(datasets)
-    tabela_resultados = pipeline.cria_tabela()
+    tabela_resultados = pipeline.cria_tabela_sintetico()
 
     mecanismo = "MNAR"
     
@@ -172,11 +172,6 @@ if __name__ == "__main__":
         tabela_resultados,
         api="claude" )
     
-    pipeline_benchmark_imputation(
-        "gpt-5-mini", 
-        mecanismo, 
-        tabela_resultados,
-        api="gpt" )
     
     pipeline_benchmark_imputation(
         "gemini-3-flash-preview", 

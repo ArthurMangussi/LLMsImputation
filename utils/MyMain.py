@@ -166,7 +166,7 @@ class BenchmarkPipeline:
         syn_cont = pd.read_csv("./data/synthetic/synthetic-cont.csv")
         syn_cont_cat = pd.read_csv("./data/synthetic/synthetic-cont-cat.csv")
 
-        tabela_resultados["datasets"] = [syn_cat, syn_cont, syn_cont_cat]
+        tabela_resultados["datasets"] = [syn_cat.astype(float), syn_cont.astype(float), syn_cont_cat.astype(float)]
 
         tabela_resultados["nome_datasets"] = [
             "synthetic-cont-cat",

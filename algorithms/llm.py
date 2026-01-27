@@ -36,6 +36,9 @@ DATASET_NAMES = {
     "stalog": "Statlog (Heart)",
     "mathernal_risk": "Maternal Health Risk",
     "stroke": "Stroke Prediction Dataset",
+    "synthetic-cont-cat": "Synthetic",
+    "synthetic-cat": "Synthetic",
+    "synthetic-cont": "Synthetic",
 }
 
 

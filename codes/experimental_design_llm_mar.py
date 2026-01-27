@@ -159,13 +159,14 @@ if __name__ == "__main__":
     datasets = MyPipeline.carrega_datasets(diretorio)
 
     pipeline = BenchmarkPipeline(datasets)
-    tabela_resultados = pipeline.cria_tabela()
+    tabela_resultados = pipeline.cria_tabela_sintetico()
 
     mecanismo = "MAR"
-        
+
     pipeline_benchmark_imputation(
-        "gemini-3-flash-preview", 
+        "claude-sonnet-4-5", 
         mecanismo, 
         tabela_resultados,
-        api="gemini" )
+        api="claude" )
+    
     
