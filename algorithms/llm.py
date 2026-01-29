@@ -3,8 +3,8 @@ from google import genai
 from google.genai import types
 from io import StringIO
 
-import re
-
+import re, os
+from dotenv import load_dotenv
 from openai import OpenAI
 from utils.MeLogSingle import MeLogger
 
@@ -12,18 +12,18 @@ import anthropic
 
 _logger = MeLogger()
 
+load_dotenv()
+
 MAPPED_LLMS = {
-                
-                "gemini-3-flash-preview": "gemini3",
-                "gemini-2.5-flash-lite": "geminiLite",
-                "mistralai/devstral-2512:free": "mistral",
-                "xiaomi/mimo-v2-flash:free":"xiamoi",
-                "gpt-5-mini":"gptMini",
-                "gpt-5":"gpt5",
-                "claude-sonnet-4-5":"claude45",
-                "tngtech/deepseek-r1t-chimera:free":"deepseek"
-                
-            }
+    "gemini-3-flash-preview": "gemini3",
+    "gemini-2.5-flash-lite": "geminiLite",
+    "mistralai/devstral-2512:free": "mistral",
+    "xiaomi/mimo-v2-flash:free": "xiamoi",
+    "gpt-5-mini": "gptMini",
+    "gpt-5": "gpt5",
+    "claude-sonnet-4-5": "claude45",
+    "tngtech/deepseek-r1t-chimera:free": "deepseek",
+}
 
 DATASET_NAMES = {
     "pima": "Pima Indians Diabetes",
@@ -42,10 +42,9 @@ DATASET_NAMES = {
 }
 
 
-
 def clean_and_parse_llm_data(response_text, expected_shape):
     # 1. Extração via Regex (Limpa as "conversas" da LLM)
-    match = re.search(r'```(?:csv)?\s*(.*?)\s*```', response_text, re.DOTALL)
+    match = re.search(r"```(?:csv)?\s*(.*?)\s*```", response_text, re.DOTALL)
     content = match.group(1).strip() if match else response_text.strip()
 
     # 2. Estratégia de tentativa e erro (CSV vs Espaços)
@@ -54,18 +53,14 @@ def clean_and_parse_llm_data(response_text, expected_shape):
         try:
             # Usamos header=0 se você espera que a LLM repita os nomes das colunas
             # Se a LLM NÃO retornar cabeçalhos, use header=None
-            df_imputed = pd.read_csv(
-                StringIO(content), 
-                sep=separator, 
-                engine="python"
-            )
+            df_imputed = pd.read_csv(StringIO(content), sep=separator, engine="python")
 
             # Se o shape bater (ou se for compatível ignorando o index), paramos aqui
             # if df_imputed.shape == expected_shape:
             return df_imputed
-            
+
             # Caso a LLM tenha retornado uma coluna de índice extra (comum)
-            #elif df_imputed.shape[1] == expected_shape[1] + 1:
+            # elif df_imputed.shape[1] == expected_shape[1] + 1:
             #    return df_imputed.iloc[:, 1:] # Remove a primeira coluna (índice)
 
         except Exception:
@@ -73,6 +68,7 @@ def clean_and_parse_llm_data(response_text, expected_shape):
 
     print(response_text)
     raise ValueError(f"Não foi possível parsear os dados. Esperado {expected_shape}.")
+
 
 def adjust_prompt(dataset_name: str, missing_data: pd.DataFrame):
     headers_str = ", ".join(missing_data.columns)
@@ -123,18 +119,21 @@ def llm_impute(
             case "open_router":
                 client = OpenAI(
                     base_url="https://openrouter.ai/api/v1",
-                    api_key="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",
+                    api_key=os.getenv("API_KEY_OPEN_ROUTER"),
                 )
 
             case "gemini":
-                client = genai.Client(api_key="AIzaSyDYwDWa96EwtzW9PBYtt-k21qHnxO00SQM",http_options={'timeout': 10*60*1000})
+                client = genai.Client(
+                    api_key=os.getenv("API_KEY_GEMINI"),
+                    http_options={"timeout": 10 * 60 * 1000},
+                )
             case "gpt":
                 client = OpenAI(
-                    api_key="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",
+                    api_key=os.getenv("API_KEY_GPT"),
                 )
             case "claude":
-                client = anthropic.Anthropic(api_key="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")
-                        
+                client = anthropic.Anthropic(api_key=os.getenv("API_KEY_CLAUDE"))
+
         output = X_teste_norm_md.copy()
 
         batch_row = 40
@@ -147,63 +146,75 @@ def llm_impute(
             row_end = min(row_start + batch_row, n_rows)
             actual_start = row_start
             if (row_end - row_start) < batch_row and n_rows >= batch_row:
-                actual_start = row_end - batch_row 
+                actual_start = row_end - batch_row
 
             for col_start in range(0, n_cols, batch_col):
                 col_end = min(col_start + batch_col, n_cols)
-                batch_to_prompt = X_teste_norm_md.iloc[actual_start:row_end, col_start:col_end]
+                batch_to_prompt = X_teste_norm_md.iloc[
+                    actual_start:row_end, col_start:col_end
+                ]
                 _logger.info(f"Batch = {iter_batch}")
                 match api:
                     case "open_router":
-                        
+
                         response = client.responses.create(
                             model=model_name,
                             temperature=0.05,
-                            input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
+                            input=adjust_prompt(
+                                dataset_name=dataset_name, missing_data=batch_to_prompt
+                            ),
                         )
                         imputed_value_str = response.output[0].content[0].text
 
                     case "gpt":
-                        
+
                         response = client.responses.create(
                             model=model_name,
-                            #tools=[{"type": "web_search"}],
-                            input=adjust_prompt(dataset_name=dataset_name, missing_data=batch_to_prompt),
+                            # tools=[{"type": "web_search"}],
+                            input=adjust_prompt(
+                                dataset_name=dataset_name, missing_data=batch_to_prompt
+                            ),
                         )
                         imputed_value_str = response.output_text
-                    
+
                     case "gemini":
-                        grounding_tool = types.Tool(
-                                google_search=types.GoogleSearch()
-                            )
+                        grounding_tool = types.Tool(google_search=types.GoogleSearch())
                         response = client.models.generate_content(
                             model=model_name,
                             contents=adjust_prompt(
                                 dataset_name=dataset_name, missing_data=batch_to_prompt
                             ),
-                            config=types.GenerateContentConfig(temperature=0.1,
-                                                               thinking_config=types.ThinkingConfig(thinking_budget=0),
-                                                               #tools=[grounding_tool])
-                                                               ))
+                            config=types.GenerateContentConfig(
+                                temperature=0.1,
+                                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                                # tools=[grounding_tool])
+                            ),
+                        )
 
                         imputed_value_str = response.text.strip()
-                    
+
                     case "claude":
                         response = client.messages.create(
                             model=model_name,
                             max_tokens=10000,
-                            messages=[{"role": "user", 
-                                      "content": adjust_prompt(
-                                dataset_name=dataset_name, missing_data=batch_to_prompt
-                            )}],
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": adjust_prompt(
+                                        dataset_name=dataset_name,
+                                        missing_data=batch_to_prompt,
+                                    ),
+                                }
+                            ],
                             temperature=0.1,
                         )
                         imputed_value_str = response.content[0].text
 
                 # Converte CSV retornado pela LLM em DataFrame
-                df_imputed = clean_and_parse_llm_data(response_text=imputed_value_str,
-                                                      expected_shape=batch_to_prompt.shape)
-                    
+                df_imputed = clean_and_parse_llm_data(
+                    response_text=imputed_value_str,
+                    expected_shape=batch_to_prompt.shape,
+                )
 
                 rows_needed = row_end - row_start
                 clean_imputed_data = df_imputed.iloc[-rows_needed:, :]
@@ -217,31 +228,37 @@ def llm_impute(
                 if actual_rows != rows_needed:
                     # Caso retorne um shape diferente do esperado, retorna os valores originais
                     # serão preenchidos com zero
-                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[row_start:row_end, col_start:col_end].values
-                
+                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[
+                        row_start:row_end, col_start:col_end
+                    ].values
+
                 elif clean_imputed_data.empty:
                     _logger.warning("LLM provide an empty dataframe")
-                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[row_start:row_end, col_start:col_end].values
-                
+                    output.iloc[row_start:row_end, col_start:col_end] = output.iloc[
+                        row_start:row_end, col_start:col_end
+                    ].values
+
                 else:
-                    output.iloc[row_start:row_end, col_start:col_end] = clean_imputed_data.values
-                iter_batch +=1
-    
+                    output.iloc[row_start:row_end, col_start:col_end] = (
+                        clean_imputed_data.values
+                    )
+                iter_batch += 1
+
     except Exception as e:
         _logger.error(
             f"Erro no batch [{row_start}:{row_end}, {col_start}:{col_end}]: {e}"
         )
         raise ValueError(e)
-    
+
     # Lógica Similar a Pré-Imputação
-    
+
     if output.isna().any().any():
         _logger.warning("LLM failed to impute some values. Applying fallback...")
         # Caso tenha NaN, substituir pela média
 
         for col in output.columns:
             if output[col].isna().any():
-                
+
                 mean_val = output[col].astype(float).mean()
                 # If the whole column is NaN (LLM failed entirely), use 0
                 fill_val = mean_val if not pd.isna(mean_val) else 0
