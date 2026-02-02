@@ -508,13 +508,12 @@ class BenchmarkPipeline:
             self.student_math,
             self.student_port,
             self.user,
-            self.stalog_australia,
             self.credit_approval,
             self.german_credit,
             self.compass_4k,
             self.stroke,
             self.compass_7k,
-            self.adult,
+            
         ]
 
         tabela_resultados["nome_datasets"] = [
@@ -533,13 +532,12 @@ class BenchmarkPipeline:
             "student_math",
             "student_port",
             "user",
-            "stalog-australia",
             "credit-approval",
             "german-credit",
             "compass-4k",
             "stroke",
             "compass-7k",
-            "adult",
+            
         ]
 
         tabela_resultados["missing_rate"] = [5, 10, 20]
