@@ -33,6 +33,278 @@ class BenchmarkPipeline:
         self.bc_coimbra = self.pre_processing_bcCoimbra()
 
     # ------------------------------------------------------------------------
+    def pre_processing_bcCoimbra(self):
+        bc_coimbra = self.datasets["bc_coimbra"].copy()
+        bc_coimbra = self._prep.label_encoder(bc_coimbra, ["target"])
+        return bc_coimbra
+
+    # ------------------------------------------------------------------------
+    def pre_processing_german_credit(self):
+        german_credit_df = self.datasets["german"].copy()
+
+        map_gender = {
+            "A91": "male",
+            "A92": "female",
+            "A93": "male",
+            "A94": "male",
+            "A95": "female",
+        }
+
+        german_credit_df["personal-status-and-sex"] = german_credit_df[
+            "personal-status-and-sex"
+        ].map(map_gender)
+
+        german_credit_df = self._prep.ordinal_encoder(
+            german_credit_df,
+            [
+                "age",
+                "checking-account",
+                "savings-account",
+                "employment-since",
+                "telephone",
+                "foreign-worker",
+                "personal-status-and-sex",
+            ],
+        )
+        german_credit_df = self._prep.label_encoder(german_credit_df, ["target"])
+
+        german_credit_df = self._prep.one_hot_encode(
+            german_credit_df,
+            [
+                "credit-history",
+                "purpose",
+                "other-debtors",
+                "property",
+                "other-installment",
+                "housing",
+                "job",
+            ],
+        )
+
+        return german_credit_df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_adult(self):
+        df = self.datasets["adult-clean"].copy()
+        df = self._prep.ordinal_encoder(
+            df, ["age", "education", "occupation", "gender"]
+        )
+
+        df = self._prep.one_hot_encode(
+            df,
+            ["workclass", "marital-status", "relationship", "native-country", "race"],
+        )
+        df = self._prep.label_encoder(df, ["target"])
+        return df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_student_port(self):
+        student_port_df = self.datasets["student-por"].copy()
+        student_port_df.target = [
+            1 if nota >= 10 else 0 for nota in student_port_df.target
+        ]
+        student_port_df.age = [1 if idade >= 18 else 0 for idade in student_port_df.age]
+
+        student_port_df = self._prep.ordinal_encoder(
+            student_port_df,
+            [
+                "school",
+                "sex",
+                "address",
+                "famsize",
+                "Pstatus",
+                "schoolsup",
+                "famsup",
+                "paid",
+                "activities",
+                "nursery",
+                "higher",
+                "internet",
+                "romantic",
+            ],
+        )
+        student_port_df = self._prep.one_hot_encode(
+            student_port_df, ["Mjob", "Fjob", "reason", "guardian"]
+        )
+        return student_port_df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_student_math(self):
+        student_mat_df = self.datasets["student-mat"].copy()
+        student_mat_df.target = [
+            1.0 if nota >= 10 else 0.0 for nota in student_mat_df.target
+        ]
+        student_mat_df.age = [
+            1.0 if idade >= 18 else 0.0 for idade in student_mat_df.age
+        ]
+
+        student_mat_df = self._prep.ordinal_encoder(
+            student_mat_df,
+            [
+                "school",
+                "sex",
+                "address",
+                "famsize",
+                "Pstatus",
+                "schoolsup",
+                "famsup",
+                "paid",
+                "activities",
+                "nursery",
+                "higher",
+                "internet",
+                "romantic",
+            ],
+        )
+        student_mat_df = self._prep.one_hot_encode(
+            student_mat_df, ["Mjob", "Fjob", "reason", "guardian"]
+        )
+        return student_mat_df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_compass_7k(self):
+        compass_7k_df = self.datasets["compas-scores-two-years_clean"].copy()
+        clean_compass_7k = compass_7k_df.drop(
+            columns=[
+                "id",
+                "name",
+                "first",
+                "last",
+                "compas_screening_date",
+                "dob",
+                "days_b_screening_arrest",
+                "c_jail_in",
+                "c_jail_out",
+                "c_case_number",
+                "c_offense_date",
+                "c_arrest_date",
+                "age_cat",
+                "vr_case_number",
+                "vr_offense_date",
+                "decile_score.1",
+                "r_case_number",
+                "r_offense_date",
+                "screening_date",
+                "v_screening_date",
+                "in_custody",
+                "out_custody",
+                "priors_count.1",
+                "r_jail_in",
+                "r_jail_out",
+                "vr_charge_degree",
+                "vr_charge_desc",
+                "v_type_of_assessment",
+                "type_of_assessment",
+                "violent_recid",
+                "r_charge_degree",
+                "r_days_from_arrest",
+                "c_charge_desc",
+                "r_charge_desc",
+            ]
+        )
+        map_races_compass = {
+            "African-American": 1,
+            "Caucasian": 0,
+            "Hispanic": 0,
+            "Other": 0,
+            "Asian": 0,
+            "Native American": 0,
+        }
+        clean_compass_7k["race"] = clean_compass_7k["race"].map(map_races_compass)
+
+        map_colum = {"two_year_recid": "target"}
+        clean_compass_7k = clean_compass_7k.rename(columns=map_colum)
+        clean_compass_7k = self._prep.label_encoder(clean_compass_7k, ["target"])
+        clean_compass_7k = self._prep.ordinal_encoder(
+            clean_compass_7k, ["sex", "c_charge_degree"]
+        )
+        clean_compass_7k = self._prep.one_hot_encode(
+            clean_compass_7k,
+            [
+                "score_text",
+                "v_score_text",
+            ],
+        )
+        return clean_compass_7k
+
+    # ------------------------------------------------------------------------
+    def pre_processing_compass_4k(self):
+        map_colum = {"two_year_recid": "target"}
+        map_races_compass = {
+            "African-American": 1,
+            "Caucasian": 0,
+            "Hispanic": 0,
+            "Other": 0,
+            "Asian": 0,
+            "Native American": 0,
+        }
+        compass_4k_df = self.datasets["compas-scores-two-years-violent_clean"].copy()
+        clean_compass_4k = (
+            compass_4k_df.drop(
+                columns=[
+                    "id",
+                    "name",
+                    "first",
+                    "last",
+                    "compas_screening_date",
+                    "dob",
+                    "days_b_screening_arrest",
+                    "c_jail_in",
+                    "c_jail_out",
+                    "c_case_number",
+                    "c_offense_date",
+                    "c_arrest_date",
+                    "age_cat",
+                    "vr_case_number",
+                    "vr_offense_date",
+                    "decile_score.1",
+                    "r_case_number",
+                    "r_offense_date",
+                    "screening_date",
+                    "v_screening_date",
+                    "in_custody",
+                    "out_custody",
+                    "priors_count.1",
+                    "r_jail_in",
+                    "r_jail_out",
+                    "vr_charge_degree",
+                    "vr_charge_desc",
+                    "v_type_of_assessment",
+                    "type_of_assessment",
+                    "violent_recid",
+                    "r_charge_degree",
+                    "r_days_from_arrest",
+                    "c_charge_desc",
+                    "r_charge_desc",
+                ]
+            )
+            .dropna()
+            .reset_index(drop=True)
+        )
+        clean_compass_4k = clean_compass_4k.rename(columns=map_colum)
+        clean_compass_4k["race"] = clean_compass_4k["race"].map(map_races_compass)
+        clean_compass_4k = self._prep.label_encoder(clean_compass_4k, ["target"])
+        clean_compass_4k = self._prep.ordinal_encoder(
+            clean_compass_4k, ["sex", "c_charge_degree"]
+        )
+        clean_compass_4k = self._prep.one_hot_encode(
+            clean_compass_4k, ["score_text", "v_score_text"]
+        )
+        return clean_compass_4k
+
+    # ------------------------------------------------------------------------
+    def pre_processing_wine(self):
+        wine_df = self.datasets["wine"].copy()
+        wine_df = self._prep.label_encoder(wine_df, ["target"])
+        return wine_df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_iris(self):
+        iris_df = self.datasets["iris"].copy()
+        iris_df = self._prep.label_encoder(iris_df, ["target"])
+        return iris_df
+
+    # ------------------------------------------------------------------------
     def pre_processing_cervical(self):
         cervical = self.datasets["risk_factors_cervical_cancer"].copy()
         cervical = cervical.drop(
