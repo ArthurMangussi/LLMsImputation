@@ -31,6 +31,29 @@ class BenchmarkPipeline:
         self.compass_7k = self.pre_processing_compass_7k()
         self.iris = self.pre_processing_iris()
         self.bc_coimbra = self.pre_processing_bcCoimbra()
+        self.credit_approval = self.pre_processing_credit_approval()
+        self.user = self.pre_processing_user_knowledge()
+        self.stalog_australia = self.pre_processing_stalog_australia()
+
+    # ------------------------------------------------------------------------
+    def pre_processing_credit_approval(self):
+        df = self.datasets["crx"].copy()
+        df = self._prep.label_encoder(df, ["target"])
+        df = self._prep.ordinal_encoder(
+            df, ["A1", "A4", "A5", "A6", "A7", "A9", "A10", "A11", "A12", "A13"]
+        )
+        return df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_user_knowledge(self):
+        df = self.datasets["user"].copy()
+        df = self._prep.label_encoder(df, ["target"])
+        return df
+
+    # ------------------------------------------------------------------------
+    def pre_processing_stalog_australia(self):
+        df = self.datasets["australia"].copy()
+        return df
 
     # ------------------------------------------------------------------------
     def pre_processing_bcCoimbra(self):
@@ -469,27 +492,53 @@ class BenchmarkPipeline:
         tabela_resultados = {}
 
         tabela_resultados["datasets"] = [
-            self.pima,
-            self.cleveland,
-            self.wiscosin,
-            self.parkinsons,
-            self.hepatitis,
-            self.mathernal_risk,
-            self.chronic,
-            self.stalog,
-            # self.stroke,
+            # self.pima,
+            # self.cleveland,
+            # self.wiscosin,
+            # self.parkinsons,
+            # self.hepatitis,
+            # self.mathernal_risk,
+            # self.chronic,
+            # self.stalog,
+            self.cervical,
+            self.iris,
+            self.wine,
+            self.bc_coimbra,
+            self.student_math,
+            self.student_port,
+            self.user,
+            self.stalog_australia,
+            self.credit_approval,
+            self.german_credit,
+            self.compass_4k,
+            self.stroke,
+            self.compass_7k,
+            self.adult,
         ]
 
         tabela_resultados["nome_datasets"] = [
-            "pima",
-            "cleveland",
-            "wiscosin",
-            "parkinsons",
-            "hepatitis",
-            "mathernal_risk",
-            "chronic",
-            "stalog",
-            # "stroke",
+            # "pima",
+            # "cleveland",
+            # "wiscosin",
+            # "parkinsons",
+            # "hepatitis",
+            # "mathernal_risk",
+            # "chronic",
+            # "stalog",
+            "cervical",
+            "iris",
+            "wine",
+            "bc_coimbra",
+            "student_math",
+            "student_port",
+            "user",
+            "stalog-australia",
+            "credit-approval",
+            "german-credit",
+            "compass-4k",
+            "stroke",
+            "compass-7k",
+            "adult",
         ]
 
         tabela_resultados["missing_rate"] = [5, 10, 20]
