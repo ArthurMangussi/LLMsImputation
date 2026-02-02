@@ -42,7 +42,8 @@ class BenchmarkPipeline:
         df = self._prep.ordinal_encoder(
             df, ["A1", "A4", "A5", "A6", "A7", "A9", "A10", "A11", "A12", "A13"]
         )
-        return df
+        df = df.replace("?", np.nan)
+        return df.dropna()
 
     # ------------------------------------------------------------------------
     def pre_processing_user_knowledge(self):
@@ -52,7 +53,7 @@ class BenchmarkPipeline:
 
     # ------------------------------------------------------------------------
     def pre_processing_stalog_australia(self):
-        df = self.datasets["australia"].copy()
+        df = self.datasets["australian"].copy()
         return df
 
     # ------------------------------------------------------------------------
