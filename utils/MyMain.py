@@ -16,10 +16,21 @@ class BenchmarkPipeline:
         self.parkinsons = self.pre_processing_parkinsons()
         self.hepatitis = self.pre_processing_hepatitis()
         self.mathernal_risk = self.pre_processing_mathernal_rick()
-        self.cervical = self.pre_processing_cervical()
         self.chronic = self.pre_processing_chronic()
         self.stalog = self.pre_processing_stalog_heart()
+        # ---------- Novos --------------------------
+        self.covid = self.pre_processing_covid()
         self.stroke = self.pre_processing_stroke()
+        self.cervical = self.pre_processing_cervical()
+        self.wine = self.pre_processing_wine()
+        self.german_credit = self.pre_processing_german_credit()
+        self.adult = self.pre_processing_adult()
+        self.student_math = self.pre_processing_student_math()
+        self.student_port = self.pre_processing_student_port()
+        self.compass_4k = self.pre_processing_compass_4k()
+        self.compass_7k = self.pre_processing_compass_7k()
+        self.iris = self.pre_processing_iris()
+        self.bc_coimbra = self.pre_processing_bcCoimbra()
 
     # ------------------------------------------------------------------------
     def pre_processing_cervical(self):
@@ -166,7 +177,11 @@ class BenchmarkPipeline:
         syn_cont = pd.read_csv("./data/synthetic/synthetic-cont.csv")
         syn_cont_cat = pd.read_csv("./data/synthetic/synthetic-cont-cat.csv")
 
-        tabela_resultados["datasets"] = [syn_cat.astype(float), syn_cont.astype(float), syn_cont_cat.astype(float)]
+        tabela_resultados["datasets"] = [
+            syn_cat.astype(float),
+            syn_cont.astype(float),
+            syn_cont_cat.astype(float),
+        ]
 
         tabela_resultados["nome_datasets"] = [
             "synthetic-cont-cat",
@@ -190,7 +205,7 @@ class BenchmarkPipeline:
             self.mathernal_risk,
             self.chronic,
             self.stalog,
-            #self.stroke,
+            # self.stroke,
         ]
 
         tabela_resultados["nome_datasets"] = [
@@ -202,12 +217,9 @@ class BenchmarkPipeline:
             "mathernal_risk",
             "chronic",
             "stalog",
-            #"stroke",
+            # "stroke",
         ]
 
-        tabela_resultados["missing_rate"] = [5, 
-                                             10, 
-                                             20
-                                             ]
+        tabela_resultados["missing_rate"] = [5, 10, 20]
 
         return tabela_resultados
