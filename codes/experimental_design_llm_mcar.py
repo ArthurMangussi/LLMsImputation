@@ -161,7 +161,7 @@ if __name__ == "__main__":
     datasets = MyPipeline.carrega_datasets(diretorio)
 
     pipeline = BenchmarkPipeline(datasets)
-    tabela_resultados = pipeline.cria_tabela_sintetico()
+    tabela_resultados = pipeline.cria_tabela()
 
     mecanismo = "MCAR"
 
@@ -170,13 +170,42 @@ if __name__ == "__main__":
         mecanismo, 
         tabela_resultados,
         api="claude" )
-        
     
     pipeline_benchmark_imputation(
         "gemini-3-flash-preview", 
         mecanismo, 
         tabela_resultados,
         api="gemini" )
+    
+    pipeline_benchmark_imputation(
+        "gemini-2.5-flash-lite", 
+        mecanismo, 
+        tabela_resultados,
+        api="gemini" )
+    
+    pipeline_benchmark_imputation(
+        "mistralai/devstral-2512:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    pipeline_benchmark_imputation(
+        "tngtech/deepseek-r1t-chimera:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    pipeline_benchmark_imputation(
+        "xiaomi/mimo-v2-flash:free", 
+        mecanismo, 
+        tabela_resultados,
+        api="open_router" )
+    
+    pipeline_benchmark_imputation(
+        "gpt-5-mini", 
+        mecanismo, 
+        tabela_resultados,
+        api="gpt" )
     
 
     

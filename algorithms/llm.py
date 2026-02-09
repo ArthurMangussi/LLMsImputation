@@ -36,11 +36,41 @@ DATASET_NAMES = {
     "stalog": "Statlog (Heart)",
     "mathernal_risk": "Maternal Health Risk",
     "stroke": "Stroke Prediction Dataset",
+    "cervical":'Cervical Cancer (Risk Factors)',
+    "iris":'Iris',
+    "wine":"Wine",
+    "bc_coimbra":"Breast Cancer Coimbra",
+    "student_math":"Student Performance (Math)",
+    "student_port":"Student Performance (Port)",
+    "user":"User Knowledge Modeling",
+    "credit-approval": "Credit Card Approvals",
+    "german-credit":"German Credit",
+    "compass-4k":"COMPAS Recidivism",
+    "compass-7k":"COMPAS viol Recidivism",
+    # Dataset Sintético
     "synthetic-cont-cat": "Synthetic",
     "synthetic-cat": "Synthetic",
     "synthetic-cont": "Synthetic",
 }
 
+def tratar_dados_infor(data_array):
+    # 1. Extrair as strings de dentro das sub-listas e criar uma lista simples
+    # data_array[:, 0] pega o conteúdo de cada sub-array
+    raw_strings = data_array.flatten()
+    
+    # 2. Dividir as strings pela vírgula
+    # Isso cria uma lista de listas: [['120', '0.00', ...], ['121', ...]]
+    split_data = [line.split(',') for line in raw_strings]
+    
+    # 3. Criar o DataFrame
+    df = pd.DataFrame(split_data)
+    df = df.drop(columns=df.columns[0])
+    
+    # 4. Converter tudo para numérico (as colunas vêm como strings)
+    # pd.to_numeric com errors='coerce' ajuda se houver algum lixo nos dados
+    df = df.apply(pd.to_numeric, errors='ignore')
+    
+    return df
 
 def clean_and_parse_llm_data(response_text, expected_shape):
     # 1. Extração via Regex (Limpa as "conversas" da LLM)
@@ -239,9 +269,16 @@ def llm_impute(
                     ].values
 
                 else:
-                    output.iloc[row_start:row_end, col_start:col_end] = (
-                        clean_imputed_data.values
-                    )
+                    try:
+                        output.iloc[row_start:row_end, col_start:col_end] = (
+                            clean_imputed_data.values
+                        )
+                    except Exception:
+                        df_tratado = tratar_dados_infor(clean_imputed_data.values)
+                        output.iloc[row_start:row_end, col_start:col_end] = (
+                            df_tratado.values
+                        )
+
                 iter_batch += 1
 
     except Exception as e:
