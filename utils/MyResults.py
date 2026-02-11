@@ -67,6 +67,19 @@ class AnalysisResults:
 
             y_true = original.iloc[linhas_nan, missing_id]
             y_pred = resposta.iloc[linhas_nan, missing_id]
+            
+            map_gender = {
+                1.0: 'Male',
+                0.0: 'Female',
+                1: 'Male',
+                0: 'Female'}
+            map_reverse = {
+                'Male': 1.0,
+                'Female': 0.0
+            }
+            y_pred = y_pred.map(map_gender)
+            y_pred = y_pred.map(map_reverse).fillna(y_true)
+
 
             # Cálculo do RMSE
             rmse = root_mean_squared_error(y_true, y_pred)
