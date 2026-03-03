@@ -17,12 +17,14 @@ load_dotenv()
 MAPPED_LLMS = {
     "gemini-3-flash-preview": "gemini3",
     "gemini-2.5-flash-lite": "geminiLite",
-    "mistralai/devstral-2512:free": "mistral",
-    "xiaomi/mimo-v2-flash:free": "xiamoi",
+    "mistralai/devstral-2512": "mistral",
+    "xiaomi/mimo-v2-flash": "xiamoi",
+    "openai/gpt-4.1-nano":"gpt41nano",
     "gpt-5-mini": "gptMini",
     "gpt-5": "gpt5",
-    "claude-sonnet-4-5": "claude45",
-    "tngtech/deepseek-r1t-chimera:free": "deepseek",
+    "anthropic/claude-sonnet-4.5": "claude45",
+    "tngtech/tng-r1t-chimera": "deepseek",
+    "moonshotai/kimi-k2.5":"kimi"
 }
 
 DATASET_NAMES = {
@@ -258,6 +260,7 @@ def llm_impute(
                 if actual_rows != rows_needed:
                     # Caso retorne um shape diferente do esperado, retorna os valores originais
                     # serão preenchidos com zero
+                    _logger.warning("LLM provide an differ dataframe shape")
                     output.iloc[row_start:row_end, col_start:col_end] = output.iloc[
                         row_start:row_end, col_start:col_end
                     ].values
@@ -270,10 +273,12 @@ def llm_impute(
 
                 else:
                     try:
+                        _logger.warning("LLM perform imputation correctly")
                         output.iloc[row_start:row_end, col_start:col_end] = (
                             clean_imputed_data.values
                         )
                     except Exception:
+                        _logger.warning("LLM provide an dataframe that must be treated")
                         df_tratado = tratar_dados_infor(clean_imputed_data.values)
                         output.iloc[row_start:row_end, col_start:col_end] = (
                             df_tratado.values
@@ -298,7 +303,8 @@ def llm_impute(
 
                 mean_val = output[col].astype(float).mean()
                 # If the whole column is NaN (LLM failed entirely), use 0
-                fill_val = mean_val if not pd.isna(mean_val) else 0
+                fill_val = mean_val if not pd.isna(mean_val) else 0.5
+                
                 output[col] = output[col].fillna(fill_val)
 
         # Para um framework, podemos adotar um Imputador (ex: MICE)
