@@ -1,14 +1,2 @@
-# LLMsImputation
-Pergunta Gemini: Please provide me with 10 tabular datasets for classification in the healthcare field that have between 1k and 15k observations, varying the type of columns (categorical and continuous).
-| #  | Dataset Name                        | Approximate Observations | Classification Task                     | Feature Types (Mixed)                                                                                 |
-|----|-------------------------------------|---------------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------------|
-| 1  | Pima Indians Diabetes               | 768                       | Binary (Diabetes Onset)                 | Continuous (e.g., Glucose, BMI) & Categorical/Discrete (e.g., Pregnancies, Age)                        |
-| 2  | Heart Disease (Cleveland)           | 303                       | Binary (Presence of Heart Disease)      | Continuous (e.g., resting BP, max heart rate) & Categorical (e.g., Chest Pain Type, Thal)              |
-| 3  | Breast Cancer Wisconsin (Diagnostic)| 569                       | Binary (Malignant or Benign)            | Continuous (30 features, e.g., radius, texture, perimeter)                                             |
-| 4  | Cervical Cancer (Risk Factors)      | 858                       | Multi-class (Biopsy result)             | Continuous (e.g., Age, Hormonal Contraceptives years) & Categorical (e.g., Smokes, STDs)               |
-| 5  | Parkinson's Disease (Voice)         | 195                       | Binary (Healthy or has Parkinson's)     | Continuous (Various voice measures like F0, jitter, shimmer)                                           |
-| 6  | Hepatitis                           | 155                       | Binary (Die or Live)                    | Continuous (e.g., Bilirubin, Albumin) & Categorical (e.g., Fatigue, Steroid, Liver Biopsy)             |
-| 7  | Chronic Kidney Disease (CKD)        | 400                       | Binary (CKD or Not CKD)                 | Continuous (e.g., blood pressure, albumin, blood urea) & Categorical (e.g., diabetes, anemia, appetite)|
-| 8  | Statlog (Heart)                     | 270                       | Binary (Presence of Heart Disease)      | Continuous & Categorical (Similar to Cleveland dataset but a different version/source)                 |
-| 9  | Maternal Health Risk           | 1,014                    | Multi-Class: Predict the risk level of maternal health (Low, Mid, High) | Continuous: Age, systolic/diastolic blood pressure, blood glucose, body temperature. Categorical: Heart rate, risk level.         |
-| 10 | Stroke Prediction Dataset           | ~4,000–5,000              | Binary (Stroke or No Stroke)            | Continuous (e.g., Age, BMI) & Categorical (e.g., Gender, Hypertension, Smoking Status)                 |
+# Large Language Models for Data Imputation: Understanding Behavior, Hallucination Effects, and Control Mechanisms
+
