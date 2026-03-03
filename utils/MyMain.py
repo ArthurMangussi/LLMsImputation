@@ -472,17 +472,35 @@ class BenchmarkPipeline:
         syn_cat = pd.read_csv("./data/synthetic/synthetic-cat.csv")
         syn_cont = pd.read_csv("./data/synthetic/synthetic-cont.csv")
         syn_cont_cat = pd.read_csv("./data/synthetic/synthetic-cont-cat.csv")
+        syn_one = pd.read_csv("./data/synthetic/synthetic-one.csv")
+        syn_two = pd.read_csv("./data/synthetic/synthetic-two.csv")
+        syn_three = pd.read_csv("./data/synthetic/synthetic-three.csv")
+        syn_rept_one = pd.read_csv("./data/synthetic/synthetic-repeted.csv")
+        syn_rept_two = pd.read_csv("./data/synthetic/synthetic-repeted-two.csv")
+        syn_rept_three = pd.read_csv("./data/synthetic/synthetic-repeted-three.csv")
 
         tabela_resultados["datasets"] = [
             syn_cat.astype(float),
             syn_cont.astype(float),
             syn_cont_cat.astype(float),
+            syn_one.astype(float),
+            syn_two.astype(float),
+            syn_three.astype(float),
+            syn_rept_one.astype(float),
+            syn_rept_two.astype(float),
+            syn_rept_three.astype(float)
         ]
 
         tabela_resultados["nome_datasets"] = [
-            "synthetic-cont-cat",
             "synthetic-cat",
             "synthetic-cont",
+            "synthetic-cont-cat",
+            "synthetic-one",
+            "synthetic-two",
+            "synthetic-three",
+            "synthetic-repeted-one",
+            "synthetic-repeted-two",
+            "synthetic-repeted-three" 
         ]
         tabela_resultados["missing_rate"] = [5, 10, 20]
 

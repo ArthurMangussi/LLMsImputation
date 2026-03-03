@@ -53,6 +53,13 @@ DATASET_NAMES = {
     "synthetic-cont-cat": "Synthetic",
     "synthetic-cat": "Synthetic",
     "synthetic-cont": "Synthetic",
+    "synthetic-one": "Synthetic",
+    "synthetic-two": "Synthetic",
+    "synthetic-three": "Synthetic",
+    "synthetic-repeted-two": "Synthetic",
+    "synthetic-repeted-three": "Synthetic",
+    "synthetic-repeted" : "Synthetic"
+
 }
 
 def tratar_dados_infor(data_array):
