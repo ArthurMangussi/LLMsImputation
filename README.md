@@ -44,7 +44,7 @@ Install the required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-We recommend using a dedicated virtual environment that could be found [here](LLMs).
+We recommend using a dedicated virtual environment that could be found [here](LLM).
 ```bash
 source LLM/bin/activate # On Linux/macOS
 .\LLM\Scripts\activate   # On Windows
