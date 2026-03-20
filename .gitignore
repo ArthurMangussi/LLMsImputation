@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+traditional_methods_tidy.csv
+
 # C extensions
 *.so
 logs
