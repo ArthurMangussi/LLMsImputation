@@ -44,11 +44,15 @@ Install the required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-We recommend using a dedicated virtual environment.
+We recommend using a dedicated virtual environment that could be found [here](LLMs).
+```bash
+source LLM/bin/activate # On Linux/macOS
+.\LLM\Scripts\activate   # On Windows
+```
 
 ## Computational Considerations
 
-![Trade-off](figs/pareto-frontier.png)
+![Trade-off](figs/pareto_frontier.png)
 
 LLMs introduce a substantial computational overhead compared to classical methods. This includes:
 
