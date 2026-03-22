@@ -66,4 +66,4 @@ These aspects should be considered when deploying LLM-based imputation in practi
 
 ## Related Publication
 
-This work has been submitted to AI Open Journal. Further details will be provided upon publication.
+This work has been submitted to IEEE Transactions on Knowledge and Data. Further details will be provided upon publication.
