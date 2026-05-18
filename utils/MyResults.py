@@ -11,7 +11,7 @@ __author__ = 'Arthur Dantas Mangussi'
 import pandas as pd
 import numpy as np
 
-from utils.MyPreprocessing import PreprocessingDatasets
+from codes.himdi import semantic_inconsistency
 
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 import warnings
@@ -53,6 +53,12 @@ class AnalysisResults:
         dataset_normalizado_md,
         dataset_normalizado_original,
     ):
+        
+        
+        si = semantic_inconsistency(X_train=dataset_normalizado_original, 
+                                    X_hat=resposta, 
+                                    missing_mask=dataset_normalizado_md.isna())
+
         nrmses = []
         features = dataset_normalizado_md.columns[
             dataset_normalizado_md.isna().any()
@@ -78,7 +84,7 @@ class AnalysisResults:
             nrmse = rmse / amplitude if amplitude != 0 else rmse
             nrmses.append(nrmse)
 
-        return np.mean(nrmses), np.std(nrmses)
+        return np.mean(nrmses), np.std(nrmses), si
     
     # ------------------------------------------------------------------------
     @staticmethod
