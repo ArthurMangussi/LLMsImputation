@@ -67,6 +67,12 @@ def himdi_score(
     numeric_cols = X_train.select_dtypes(include=np.number).columns
     corr_matrix = X_train[numeric_cols].corr(method="spearman").abs()
 
+    # X_hat pode trazer celulas nao numericas remanescentes (ex.: parsing
+    # imperfeito da saida da LLM). Regressao e subtracao exigem dtype
+    # numerico; qualquer valor nao conversivel vira NaN (comparacao com
+    # NaN retorna False, entao a celula nao conta como violacao).
+    X_hat = X_hat[numeric_cols].apply(pd.to_numeric, errors="coerce")
+
     himdi_per_feature = {}
 
     for j in numeric_cols:

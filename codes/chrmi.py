@@ -19,6 +19,33 @@ CHRMI com HIMDI celula-a-celula.
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from sklearn.preprocessing import LabelEncoder
+
+
+class _OracleWrapper:
+    """
+    Encapsula o XGBClassifier treinado em rotulos codificados (0..n_classes-1,
+    exigencia do XGBoost) e o LabelEncoder usado, de forma que .predict()
+    devolva as classes no espaco original de y -- o mesmo espaco de
+    df_true[label_col] em compute_chrmi.
+    """
+
+    def __init__(self, model, encoder: LabelEncoder):
+        self.model = model
+        self.encoder = encoder
+
+    @staticmethod
+    def _to_numeric(X: pd.DataFrame) -> pd.DataFrame:
+        # Alguns datasets trazem colunas object por sujeira de origem (ex.:
+        # placeholders de string em campos numericos). O XGBoost exige dtype
+        # numerico estrito, entao qualquer valor nao conversivel vira NaN
+        # (que o XGBoost trata nativamente como ausente).
+        return X.apply(pd.to_numeric, errors="coerce")
+
+    def predict(self, X):
+        return self.encoder.inverse_transform(
+            self.model.predict(self._to_numeric(X))
+        )
 
 
 def train_oracle(df_train: pd.DataFrame, label_col: str):
@@ -28,8 +55,8 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
 
     Returns
     -------
-    model : xgb.XGBClassifier
-        Oraculo treinado.
+    model : _OracleWrapper
+        Oraculo treinado, com .predict() no espaco original dos rotulos.
     acc : float
         Acuracia do oraculo nos proprios dados de treino usados para
         ajusta-lo. Reporte isto por dataset/fold antes de confiar no
@@ -39,12 +66,16 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
         CHRMI.
     """
     fully_observed = df_train.dropna()
-    X = fully_observed.drop(columns=[label_col])
+    X = _OracleWrapper._to_numeric(fully_observed.drop(columns=[label_col]))
     y = fully_observed[label_col]
+
+    encoder = LabelEncoder()
+    y_encoded = encoder.fit_transform(y)
+
     model = xgb.XGBClassifier(n_estimators=200, max_depth=4, eval_metric="mlogloss")
-    model.fit(X, y)
-    acc = model.score(X, y)
-    return model, acc
+    model.fit(X, y_encoded)
+    acc = model.score(X, y_encoded)
+    return _OracleWrapper(model, encoder), acc
 
 
 def compute_chrmi(
