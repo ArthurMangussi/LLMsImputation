@@ -16,15 +16,10 @@ load_dotenv()
 
 MAPPED_LLMS = {
     "gemini-3-flash-preview": "gemini3",
-    "gemini-2.5-flash-lite": "geminiLite",
     "mistralai/devstral-2512": "mistral",
     "xiaomi/mimo-v2-flash": "xiamoi",
     "openai/gpt-4.1-nano":"gpt41nano",
-    "gpt-5-mini": "gptMini",
-    "gpt-5": "gpt5",
     "anthropic/claude-sonnet-4.5": "claude45",
-    "tngtech/tng-r1t-chimera": "deepseek",
-    "moonshotai/kimi-k2.5":"kimi"
 }
 
 DATASET_NAMES = {
