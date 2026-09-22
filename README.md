@@ -37,6 +37,15 @@ Empirical results indicate that **Claude 4.5 Sonnet** and **Gemini 3.0 Flash** c
 
 In terms of computational efficiency, LLM-based approaches require significantly more resources compared to traditional imputation methods.
 
+## Hallucination Metrics
+
+Beyond accuracy, we introduce two complementary metrics to quantify **hallucination** in imputed values, i.e., imputations that are statistically implausible or that mislead downstream decisions:
+
+- **HIMDI** (Hallucination Index for Missing Data Imputation) — a correlation-weighted, feature-level metric. For each imputed cell, it regresses the target feature on its correlated partner features (fitted on the observed training data) and flags a violation whenever the imputed value falls outside a residual-based tolerance band. Violations are aggregated per feature using a continuous weighting by partner correlation strength, then averaged across features (`codes/himdi.py`).
+- **CHRMI** (Consequential Hallucination Rate for Missing Data Imputation) — a cell-level, oracle-based metric that measures *decision-relevant* hallucination. For each imputed cell, an oracle classifier's prediction on the fully imputed row is compared against a counterfactual prediction where only that cell is swapped for its true value, holding all other cells fixed. Under the materiality condition, a cell counts as a hallucination only when the counterfactual swap would have led the oracle to the correct label, isolating imputations that actually flip a downstream decision (`codes/chrmi.py`).
+
+Both metrics are computed post-hoc from already-imputed datasets (LLM-based and classical baselines alike) via `codes/hallucination_metrics.py`, which reproduces the original cross-validation folds and writes per-fold results (`himdi`, `chrmi`, and oracle accuracy) to `results/<model>/Resultados/<mechanism>_Hallucination/`.
+
 ## Installation
 
 Install the required dependencies:
@@ -65,5 +74,11 @@ LLMs introduce a substantial computational overhead compared to classical method
 These aspects should be considered when deploying LLM-based imputation in practice.
 
 ## Related Publication
-
-This work has been submitted to 43rd IEEE International Conference on Data Engineering (ICDE). Further details will be provided upon publication.
+```bash
+@article{mangussi2026large,
+  title={Large language models for missing data imputation: Understanding behavior, hallucination effects, and control mechanisms},
+  author={Mangussi, Arthur Dantas and Pereira, Ricardo Cardoso and Lorena, Ana Carolina and Abreu, Pedro Henriques},
+  journal={arXiv preprint arXiv:2603.22332},
+  year={2026}
+}
+```
