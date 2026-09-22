@@ -19,6 +19,7 @@ CHRMI com HIMDI celula-a-celula.
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -56,14 +57,18 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
     Returns
     -------
     model : _OracleWrapper
-        Oraculo treinado, com .predict() no espaco original dos rotulos.
+        Oraculo treinado (no conjunto de treino inteiro, para aproveitar o
+        maximo de dados), com .predict() no espaco original dos rotulos.
     acc : float
-        Acuracia do oraculo nos proprios dados de treino usados para
-        ajusta-lo. Reporte isto por dataset/fold antes de confiar no
+        Acuracia do oraculo estimada por validacao cruzada (nao a acuracia
+        no proprio conjunto de treino, que com XGBoost de 200 arvores tende
+        a memorizar os dados e ficar artificialmente perto de 1.0, mascarando
+        overfitting). Reporte isto por dataset/fold antes de confiar no
         oraculo -- ver "Validity precondition" na formalizacao (paragrafo
-        antes da Eq. 1): datasets/folds onde acc nao esta claramente
-        acima de um baseline ingenuo nao devem ser interpretados via
-        CHRMI.
+        antes da Eq. 1): datasets/folds onde acc nao esta claramente acima
+        de um baseline ingenuo nao devem ser interpretados via CHRMI.
+        NaN quando nao ha classe minoritaria suficiente para pelo menos 2
+        folds estratificados.
     """
     fully_observed = df_train.dropna()
     X = _OracleWrapper._to_numeric(fully_observed.drop(columns=[label_col]))
@@ -72,9 +77,19 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
     encoder = LabelEncoder()
     y_encoded = encoder.fit_transform(y)
 
-    model = xgb.XGBClassifier(n_estimators=200, max_depth=4, eval_metric="mlogloss")
+    def _novo_modelo():
+        return xgb.XGBClassifier(n_estimators=200, max_depth=4, eval_metric="mlogloss")
+
+    n_splits = min(5, np.bincount(y_encoded).min())
+    if n_splits >= 2:
+        acc = cross_val_score(
+            _novo_modelo(), X, y_encoded, cv=n_splits, scoring="accuracy"
+        ).mean()
+    else:
+        acc = np.nan
+
+    model = _novo_modelo()
     model.fit(X, y_encoded)
-    acc = model.score(X, y_encoded)
     return _OracleWrapper(model, encoder), acc
 
 
