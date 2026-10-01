@@ -20,13 +20,14 @@ delta_i ~ 0: a imputacao preserva a dificuldade original da observacao.
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from sklearn.model_selection import cross_val_score
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
 
 class _OracleWrapper:
     """
-    Encapsula o XGBClassifier treinado em rotulos codificados (0..n_classes-1,
+    Encapsula o oraculo treinado em rotulos codificados (0..n_classes-1,
     exigencia do XGBoost) e o LabelEncoder usado, de forma que as
     probabilidades possam ser consultadas no espaco original de y.
     """
@@ -53,22 +54,45 @@ class _OracleWrapper:
         return out
 
 
+def _novo_modelo():
+    return xgb.XGBClassifier(n_estimators=200, max_depth=4, eval_metric="mlogloss")
+
+
+def _fit_oracle(X: pd.DataFrame, y: np.ndarray):
+    """
+    XGBoost calibrado por Platt (sigmoid). O CHRMI usa o VALOR de P(y|x),
+    nao so o argmax, e o XGBoost em datasets pequenos tende a ser
+    overconfident (probabilidades saturadas perto de 0/1), o que comprime
+    ou exagera delta_i e torna o CHRMI incomparavel entre datasets.
+    Sigmoid em vez de isotonic: isotonic sobreajusta com poucas linhas.
+    Retorna (modelo, calibrado?); sem calibracao quando a classe
+    minoritaria nao comporta 2 folds estratificados.
+    """
+    n_cal = min(5, np.bincount(y).min())
+    if n_cal < 2:
+        return _novo_modelo().fit(X, y), False
+    model = CalibratedClassifierCV(_novo_modelo(), method="sigmoid", cv=n_cal)
+    return model.fit(X, y), True
+
+
 def train_oracle(df_train: pd.DataFrame, label_col: str):
     """
-    Treina o oraculo (classificador de referencia) apenas nas linhas
-    100% observadas do fold de treino.
+    Treina o oraculo (classificador de referencia calibrado) apenas nas
+    linhas 100% observadas do fold de treino.
 
     Returns
     -------
     model : _OracleWrapper
         Oraculo treinado no conjunto de treino inteiro.
-    acc : float
-        Acuracia do oraculo estimada por validacao cruzada (nao a acuracia
-        no proprio treino, que com XGBoost de 200 arvores tende a ficar
-        artificialmente perto de 1.0). Datasets/folds onde acc nao esta
-        claramente acima de um baseline ingenuo nao devem ser interpretados
-        via CHRMI. NaN quando nao ha classe minoritaria suficiente para pelo
-        menos 2 folds estratificados.
+    metrics : dict
+        "oracle_acc" e "oracle_brier": acuracia e Brier score multiclasse
+        (soma sobre classes, em [0, 2]; menor e melhor) do oraculo
+        calibrado, estimados por validacao cruzada externa -- nao no
+        proprio treino, onde o XGBoost fica artificialmente perto do
+        perfeito. Datasets/folds onde acc nao esta claramente acima de um
+        baseline ingenuo nao devem ser interpretados via CHRMI. NaN quando
+        nao ha classe minoritaria suficiente para 2 folds estratificados.
+        "oracle_calibrated": se o modelo final foi calibrado.
     """
     fully_observed = df_train.dropna()
     X = _OracleWrapper._to_numeric(fully_observed.drop(columns=[label_col]))
@@ -76,21 +100,26 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
 
     encoder = LabelEncoder()
     y_encoded = encoder.fit_transform(y)
+    n_classes = len(encoder.classes_)
 
-    def _novo_modelo():
-        return xgb.XGBClassifier(n_estimators=200, max_depth=4, eval_metric="mlogloss")
-
+    acc = brier = np.nan
     n_splits = min(5, np.bincount(y_encoded).min())
     if n_splits >= 2:
-        acc = cross_val_score(
-            _novo_modelo(), X, y_encoded, cv=n_splits, scoring="accuracy"
-        ).mean()
-    else:
-        acc = np.nan
+        proba = np.zeros((len(y_encoded), n_classes))
+        for tr, te in StratifiedKFold(n_splits).split(X, y_encoded):
+            fold_model, _ = _fit_oracle(X.iloc[tr], y_encoded[tr])
+            proba[te] = fold_model.predict_proba(X.iloc[te])
+        onehot = np.eye(n_classes)[y_encoded]
+        acc = float((proba.argmax(axis=1) == y_encoded).mean())
+        brier = float(((proba - onehot) ** 2).sum(axis=1).mean())
 
-    model = _novo_modelo()
-    model.fit(X, y_encoded)
-    return _OracleWrapper(model, encoder), acc
+    model, calibrated = _fit_oracle(X, y_encoded)
+    metrics = {
+        "oracle_acc": acc,
+        "oracle_brier": brier,
+        "oracle_calibrated": calibrated,
+    }
+    return _OracleWrapper(model, encoder), metrics
 
 
 def compute_chrmi(

@@ -99,7 +99,7 @@ def pipeline_hallucination_metrics(
                     return_per_cell=True,
                 )
 
-                oracle, oracle_acc = train_oracle(
+                oracle, oracle_metrics = train_oracle(
                     df_treino_oraculo, label_col="target"
                 )
 
@@ -123,7 +123,7 @@ def pipeline_hallucination_metrics(
                         "himdi": himdi,
                         **chrmi_summary,
                         **mowi_summary,
-                        "oracle_acc": oracle_acc,
+                        **oracle_metrics,
                     }
                 )
 
