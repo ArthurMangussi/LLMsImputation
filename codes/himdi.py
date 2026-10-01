@@ -21,6 +21,7 @@ def himdi_score(
     epsilon: float = 0.01,
     delta_multiplier: float = 1.0,
     return_per_feature: bool = False,
+    return_per_cell: bool = False,
 ):
     """
     Calcula o HIMDI suavizado (correlation-weighted).
@@ -53,6 +54,10 @@ def himdi_score(
     return_per_feature : bool, default=False
         Se True, retorna tambem o dict {feature: HIMDI_j} (Eq. 2),
         alem do HIMDI agregado (Eq. 3).
+    return_per_cell : bool, default=False
+        Se True, retorna tambem um DataFrame ["row", "feature", "violation"]
+        com v_ij por celula imputada: media ponderada por w_jk da
+        indicadora de violacao, sobre os parceiros k observados na linha i.
 
     Returns
     -------
@@ -63,6 +68,9 @@ def himdi_score(
         em vez de zeradas por convencao -- ver nota no corpo da funcao.
     dict[str, float], opcional
         HIMDI_j por feature, retornado apenas se return_per_feature=True.
+    pd.DataFrame, opcional
+        v_ij por celula, retornado apenas se return_per_cell=True. Celulas
+        sem nenhum parceiro avaliavel ficam de fora.
     """
     numeric_cols = X_train.select_dtypes(include=np.number).columns
     corr_matrix = X_train[numeric_cols].corr(method="spearman").abs()
@@ -74,6 +82,8 @@ def himdi_score(
     X_hat = X_hat[numeric_cols].apply(pd.to_numeric, errors="coerce")
 
     himdi_per_feature = {}
+    cell_num = pd.DataFrame(0.0, index=X_hat.index, columns=numeric_cols)
+    cell_den = pd.DataFrame(0.0, index=X_hat.index, columns=numeric_cols)
 
     for j in numeric_cols:
         imputed_idx = missing_mask[j]
@@ -111,7 +121,8 @@ def himdi_score(
             expected = reg.predict(x_partner)
             actual_imputed = X_hat.loc[valid_idx, j].values
 
-            viol_jk = (np.abs(actual_imputed - expected) > delta_jk).mean()
+            viol_cells = np.abs(actual_imputed - expected) > delta_jk
+            viol_jk = viol_cells.mean()
 
             # --- Peso continuo por forca de correlacao (Eq. 2) ---
             rho_jk = corr_matrix.loc[j, k]
@@ -119,6 +130,9 @@ def himdi_score(
 
             weighted_viol_sum += w_jk * viol_jk
             weight_sum += w_jk
+
+            cell_num.loc[valid_idx, j] += w_jk * viol_cells
+            cell_den.loc[valid_idx, j] += w_jk
 
         if weight_sum < 1e-12:
             # K_j vazio: nenhum parceiro com dados suficientes para j.
@@ -133,6 +147,11 @@ def himdi_score(
     valid_scores = [v for v in himdi_per_feature.values() if not np.isnan(v)]
     himdi_overall = float(np.mean(valid_scores)) if valid_scores else np.nan
 
+    outputs = [himdi_overall]
     if return_per_feature:
-        return himdi_overall, himdi_per_feature
-    return himdi_overall
+        outputs.append(himdi_per_feature)
+    if return_per_cell:
+        per_cell = (cell_num / cell_den.where(cell_den > 0)).stack().dropna()
+        per_cell.index.names = ["row", "feature"]
+        outputs.append(per_cell.rename("violation").reset_index())
+    return outputs[0] if len(outputs) == 1 else tuple(outputs)

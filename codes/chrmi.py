@@ -1,19 +1,20 @@
 """
 CHRMI (Consequential Hallucination Rate for Missing Data Imputation).
 
-Reescreve a implementacao original em granularidade de CELULA, e nao de
-linha: para cada celula imputada (i, j), isola o efeito marginal daquele
-valor especifico sobre a decisao do oraculo, mantendo todas as demais
-celulas da linha (inclusive outras imputadas) fixas em seus valores
-imputados. Isso corresponde as Eq. (1)-(4) da formalizacao em LaTeX e
-permite agregar CHRMI por feature, na mesma granularidade do HIMDI.
+Mede, por observacao com pelo menos um valor ausente, o quanto a imputacao
+altera a dificuldade de classificacao percebida por um oraculo treinado nos
+dados de treino. A dificuldade de uma linha x com rotulo verdadeiro y e
+D(x) = 1 - P(y | x). Para cada linha i com algum valor imputado:
 
-Diferenca em relacao a versao original: o codigo original comparava a
-linha imputada completa contra a linha verdadeira completa, misturando
-o efeito de todas as celulas imputadas daquela linha em um unico flip.
-Em missingness multivariado (mais de uma celula ausente por linha),
-isso impede atribuir o flip a uma celula especifica e impede comparar
-CHRMI com HIMDI celula-a-celula.
+    delta_i = D(x_i^true) - D(x_hat_i)
+            = P(y_i | x_hat_i) - P(y_i | x_i^true)
+
+delta_i > 0: a imputacao deixou a classificacao facil demais -- os valores
+             imputados carregam mais sinal do rotulo do que os valores
+             reais (sinal fabricado / alucinacao "confiante").
+delta_i < 0: a imputacao deixou a classificacao dificil demais -- os valores
+             imputados apagaram ou contradisseram o sinal real do rotulo.
+delta_i ~ 0: a imputacao preserva a dificuldade original da observacao.
 """
 
 import numpy as np
@@ -26,9 +27,8 @@ from sklearn.preprocessing import LabelEncoder
 class _OracleWrapper:
     """
     Encapsula o XGBClassifier treinado em rotulos codificados (0..n_classes-1,
-    exigencia do XGBoost) e o LabelEncoder usado, de forma que .predict()
-    devolva as classes no espaco original de y -- o mesmo espaco de
-    df_true[label_col] em compute_chrmi.
+    exigencia do XGBoost) e o LabelEncoder usado, de forma que as
+    probabilidades possam ser consultadas no espaco original de y.
     """
 
     def __init__(self, model, encoder: LabelEncoder):
@@ -43,10 +43,14 @@ class _OracleWrapper:
         # (que o XGBoost trata nativamente como ausente).
         return X.apply(pd.to_numeric, errors="coerce")
 
-    def predict(self, X):
-        return self.encoder.inverse_transform(
-            self.model.predict(self._to_numeric(X))
-        )
+    def proba_true_class(self, X: pd.DataFrame, y) -> np.ndarray:
+        """P(y_i | x_i) para cada linha; NaN se y_i nao foi visto no treino."""
+        proba = self.model.predict_proba(self._to_numeric(X))
+        y = np.asarray(y)
+        known = np.isin(y, self.encoder.classes_)
+        out = np.full(len(y), np.nan)
+        out[known] = proba[np.flatnonzero(known), self.encoder.transform(y[known])]
+        return out
 
 
 def train_oracle(df_train: pd.DataFrame, label_col: str):
@@ -57,18 +61,14 @@ def train_oracle(df_train: pd.DataFrame, label_col: str):
     Returns
     -------
     model : _OracleWrapper
-        Oraculo treinado (no conjunto de treino inteiro, para aproveitar o
-        maximo de dados), com .predict() no espaco original dos rotulos.
+        Oraculo treinado no conjunto de treino inteiro.
     acc : float
         Acuracia do oraculo estimada por validacao cruzada (nao a acuracia
-        no proprio conjunto de treino, que com XGBoost de 200 arvores tende
-        a memorizar os dados e ficar artificialmente perto de 1.0, mascarando
-        overfitting). Reporte isto por dataset/fold antes de confiar no
-        oraculo -- ver "Validity precondition" na formalizacao (paragrafo
-        antes da Eq. 1): datasets/folds onde acc nao esta claramente acima
-        de um baseline ingenuo nao devem ser interpretados via CHRMI.
-        NaN quando nao ha classe minoritaria suficiente para pelo menos 2
-        folds estratificados.
+        no proprio treino, que com XGBoost de 200 arvores tende a ficar
+        artificialmente perto de 1.0). Datasets/folds onde acc nao esta
+        claramente acima de um baseline ingenuo nao devem ser interpretados
+        via CHRMI. NaN quando nao ha classe minoritaria suficiente para pelo
+        menos 2 folds estratificados.
     """
     fully_observed = df_train.dropna()
     X = _OracleWrapper._to_numeric(fully_observed.drop(columns=[label_col]))
@@ -97,105 +97,69 @@ def compute_chrmi(
     df_imputed: pd.DataFrame,
     df_true: pd.DataFrame,
     missing_mask: pd.DataFrame,
-    oracle,
+    oracle: _OracleWrapper,
     label_col: str,
-    material: bool = True,
-    return_per_feature: bool = False,
 ):
     """
-    Calcula o CHRMI celula-a-celula, Eq. (1)-(4).
-
-    Para cada celula imputada (i, j): compara a predicao do oraculo na
-    linha totalmente imputada (baseline, X_hat_i) contra a predicao na
-    mesma linha com APENAS a celula j trocada pelo valor verdadeiro
-    (contrafactual X_hat_i^{(j->true)}), mantendo todas as demais
-    celulas -- inclusive outras imputadas na mesma linha -- inalteradas
-    (Eq. 1).
+    Calcula o CHRMI por observacao com pelo menos um valor imputado.
 
     Parameters
     ----------
     df_imputed : pd.DataFrame
-        Dataset com todos os valores imputados (X_hat), inclui a coluna
-        de rotulo (label_col).
+        Dataset imputado (X_hat), inclui label_col.
     df_true : pd.DataFrame
-        Dataset com os valores verdadeiros (ground truth), mesmo shape
-        e index de df_imputed, inclui label_col.
+        Dataset original completo (ground truth), mesmo shape e index de
+        df_imputed, inclui label_col.
     missing_mask : pd.DataFrame
-        Mascara booleana (mesmo shape/index das features, sem
-        label_col), True onde a celula original era missing e foi
-        imputada.
-    oracle : objeto com metodo .predict(X) -> array de classes
+        Mascara booleana das features, True onde a celula foi imputada.
+    oracle : _OracleWrapper
         Classificador treinado via train_oracle().
     label_col : str
         Nome da coluna de rotulo.
-    material : bool, default=True
-        Se True, aplica a condicao de materialidade (Eq. 2): so conta
-        como hallucination quando a predicao contrafactual-verdadeira
-        coincide com o rotulo real y_i. Se False, retorna delta_ij
-        (Eq. 1) sem essa restricao.
-    return_per_feature : bool, default=False
-        Se True, retorna tambem CHRMI_j por feature (Eq. 3).
 
     Returns
     -------
-    chrmi_overall : float
-        CHRMI agregado (Eq. 4), media sobre todas as celulas avaliadas.
-    chrmi_per_feature : dict[str, float], opcional
-        CHRMI_j por feature, retornado apenas se return_per_feature=True.
-    flip_df : pd.DataFrame
-        Uma linha por celula avaliada, colunas ["row", "feature", "flip"],
-        com o vetor delta_ij^mat (ou delta_ij, se material=False).
+    summary : dict
+        "chrmi": media de delta_i (com sinal); "chrmi_abs": media de
+        |delta_i|; "chrmi_plus": media de max(delta_i, 0), apenas o lado
+        "facil demais" -- reducao de incerteza alem do que os dados reais
+        sustentam (nivel World do MOWI). delta_i < 0 e perda de
+        informacao, nao alucinacao, e por isso fica fora do chrmi_plus.
+    row_df : pd.DataFrame
+        Uma linha por observacao avaliada, colunas
+        ["row", "difficulty_true", "difficulty_imputed", "delta"].
     """
     feature_cols = [c for c in df_imputed.columns if c != label_col]
-    mask = missing_mask[feature_cols]
-
-    rows_with_missing = mask.any(axis=1)
-    idx_rows = df_imputed.index[rows_with_missing]
+    idx_rows = df_imputed.index[missing_mask[feature_cols].any(axis=1)]
 
     if len(idx_rows) == 0:
-        empty = pd.DataFrame(columns=["row", "feature", "flip"])
-        if return_per_feature:
-            return np.nan, {}, empty
-        return np.nan, empty
+        empty = pd.DataFrame(
+            columns=["row", "difficulty_true", "difficulty_imputed", "delta"]
+        )
+        return {"chrmi": np.nan, "chrmi_abs": np.nan, "chrmi_plus": np.nan}, empty
 
-    # --- Predicao baseline: linha totalmente imputada (X_hat_i), Eq. 1 ---
-    X_baseline = df_imputed.loc[idx_rows, feature_cols]
-    pred_baseline = pd.Series(oracle.predict(X_baseline), index=idx_rows)
+    y_true = df_true.loc[idx_rows, label_col]
 
-    # --- Construcao vetorizada das linhas contrafactuais ---
-    # Uma linha por celula imputada: X_hat_i com APENAS a coluna j
-    # trocada pelo valor verdadeiro (Eq. 1, X_hat_i^{(j->true)}).
-    records = []  # (row_idx, feature)
-    cf_rows = []
-    for i in idx_rows:
-        missing_cols_i = mask.loc[i]
-        missing_cols_i = missing_cols_i[missing_cols_i].index.tolist()
-        base_row = X_baseline.loc[i]
-        for j in missing_cols_i:
-            cf_row = base_row.copy()
-            cf_row[j] = df_true.loc[i, j]
-            cf_rows.append(cf_row)
-            records.append((i, j))
+    difficulty_true = 1 - oracle.proba_true_class(
+        df_true.loc[idx_rows, feature_cols], y_true
+    )
+    difficulty_imputed = 1 - oracle.proba_true_class(
+        df_imputed.loc[idx_rows, feature_cols], y_true
+    )
+    delta = difficulty_true - difficulty_imputed
 
-    X_cf = pd.DataFrame(cf_rows, columns=feature_cols)
-    pred_cf = oracle.predict(X_cf)
+    row_df = pd.DataFrame(
+        {
+            "row": idx_rows,
+            "difficulty_true": difficulty_true,
+            "difficulty_imputed": difficulty_imputed,
+            "delta": delta,
+        }
+    )
 
-    y_true = df_true[label_col]
-
-    flip_records = []
-    for (i, j), pred_swap in zip(records, pred_cf):
-        pred_imp = pred_baseline.loc[i]
-        flip = bool(pred_imp != pred_swap)  # delta_ij, Eq. 1
-        if material:
-            flip = flip and bool(pred_swap == y_true.loc[i])  # delta_ij^mat, Eq. 2
-        flip_records.append((i, j, flip))
-
-    flip_df = pd.DataFrame(flip_records, columns=["row", "feature", "flip"])
-
-    chrmi_overall = float(flip_df["flip"].mean())
-
-    if return_per_feature:
-        chrmi_per_feature = flip_df.groupby("feature")["flip"].mean().to_dict()
-        return chrmi_overall, chrmi_per_feature, flip_df
-
-    return chrmi_overall, flip_df
+    summary = {
+        "chrmi": float(np.nanmean(delta)),
+        "chrmi_abs": float(np.nanmean(np.abs(delta))),
+        "chrmi_plus": float(np.nanmean(np.maximum(delta, 0))),
+    }
+    return summary, row_df

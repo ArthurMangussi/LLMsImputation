@@ -14,6 +14,7 @@ from algorithms.llm import MAPPED_LLMS
 
 from himdi import himdi_score
 from chrmi import train_oracle, compute_chrmi
+from mowi_index import mowi_hallucination_index
 
 
 def pipeline_hallucination_metrics(
@@ -91,23 +92,26 @@ def pipeline_hallucination_metrics(
                 df_true = X_teste.copy()
                 df_true["target"] = y_teste
 
-                himdi = himdi_score(
+                himdi, himdi_cells = himdi_score(
                     X_train=X_treino,
                     X_hat=X_hat,
                     missing_mask=missing_mask,
+                    return_per_cell=True,
                 )
 
                 oracle, oracle_acc = train_oracle(
                     df_treino_oraculo, label_col="target"
                 )
 
-                chrmi, _ = compute_chrmi(
+                chrmi_summary, chrmi_rows = compute_chrmi(
                     df_imputed=df_imputed,
                     df_true=df_true,
                     missing_mask=missing_mask,
                     oracle=oracle,
                     label_col="target",
                 )
+
+                mowi_summary, _ = mowi_hallucination_index(himdi_cells, chrmi_rows)
 
                 linhas_resultado.append(
                     {
@@ -117,7 +121,8 @@ def pipeline_hallucination_metrics(
                         "missing_rate": md,
                         "fold": fold,
                         "himdi": himdi,
-                        "chrmi": chrmi,
+                        **chrmi_summary,
+                        **mowi_summary,
                         "oracle_acc": oracle_acc,
                     }
                 )
@@ -143,7 +148,7 @@ if __name__ == "__main__":
     tabela_resultados = pipeline.cria_tabela()
 
     for mecanismo in ["MAR", "MNAR"]:
-        # for model_impt in MAPPED_LLMS:
-        #     pipeline_hallucination_metrics(model_impt, mecanismo, tabela_resultados)
+        for model_impt in MAPPED_LLMS:
+            pipeline_hallucination_metrics(model_impt, mecanismo, tabela_resultados)
         for model_impt in ["knn", "mice", "missForest", "saei", "tabpfn"]:
             pipeline_hallucination_metrics(model_impt, mecanismo, tabela_resultados)
