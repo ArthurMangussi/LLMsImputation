@@ -20,6 +20,7 @@ def himdi_score(
     n_min: int = 10,
     epsilon: float = 0.01,
     delta_multiplier: float = 1.0,
+    alpha: float = None,
     return_per_feature: bool = False,
     return_per_cell: bool = False,
 ):
@@ -51,6 +52,11 @@ def himdi_score(
         Multiplicador sobre o desvio-padrao residual para definir a
         banda de tolerancia delta_{j|k} (mesma semantica da versao
         original).
+    alpha : float, optional
+        Se informado, substitui a banda delta_multiplier * std pelo
+        quantil (1 - alpha) de |residuos| no treino, de forma que uma
+        imputacao perfeita (valores trocaveis com o treino) viole a banda
+        com probabilidade ~alpha. Ignora delta_multiplier.
     return_per_feature : bool, default=False
         Se True, retorna tambem o dict {feature: HIMDI_j} (Eq. 2),
         alem do HIMDI agregado (Eq. 3).
@@ -107,7 +113,10 @@ def himdi_score(
             reg = LinearRegression()
             reg.fit(train_pair[[k]], train_pair[j])
             residuals = train_pair[j] - reg.predict(train_pair[[k]])
-            delta_jk = delta_multiplier * residuals.std()
+            if alpha is None:
+                delta_jk = delta_multiplier * residuals.std()
+            else:
+                delta_jk = np.quantile(np.abs(residuals), 1 - alpha)
 
             # --- Celulas avaliaveis: j imputado e k observado ---
             k_missing = missing_mask.get(
