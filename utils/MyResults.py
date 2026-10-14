@@ -11,7 +11,7 @@ __author__ = 'Arthur Dantas Mangussi'
 import pandas as pd
 import numpy as np
 
-from codes.himdi import semantic_inconsistency
+from codes.himdi import himdi_score
 
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 import warnings
@@ -55,7 +55,7 @@ class AnalysisResults:
     ):
         
         
-        si = semantic_inconsistency(X_train=dataset_normalizado_original, 
+        si = himdi_score(X_train=dataset_normalizado_original, 
                                     X_hat=resposta, 
                                     missing_mask=dataset_normalizado_md.isna())
 

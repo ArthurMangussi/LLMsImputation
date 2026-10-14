@@ -13,11 +13,11 @@ from utils.MeLogSingle import MeLogger
 
 from algorithms.llm import MAPPED_LLMS
 
-from himdi import himdi_score, himdi_mv_score
+from himdi import himdi_score
 from chrmi import train_oracle, compute_chrmi
-from mowi_index import mowi_hallucination_index, rihi_suave
+from mowi_index import mowi_hallucination_index
 
-ALPHA = 0.05  # banda do HIMDI: quantil (1 - alpha) de |residuos| no treino
+ALPHA = 0.05  # banda split-conformal do HIMDI (Eq. 6), ver himdi.conformal_band
 METODOS_NORMALIZADOS = ["knn", "mice", "missForest", "saei", "tabpfn", "softImpute"]
 
 

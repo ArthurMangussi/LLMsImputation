@@ -13,6 +13,21 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
+def conformal_band(residuals, alpha: float) -> float:
+    """
+    Banda de tolerancia delta_{j|k} pela construcao split-conformal (Eq. 6):
+    o residuo absoluto de ordem ceil((n + 1)(1 - alpha)). Quando essa ordem
+    excede n o quantil e indefinido e a banda e infinita, de forma que o
+    par nunca registra violacao.
+    """
+    r = np.sort(np.abs(np.asarray(residuals, dtype=float)))
+    n = len(r)
+    rank = int(np.ceil((n + 1) * (1 - alpha)))
+    if rank > n:
+        return np.inf
+    return float(r[rank - 1])
+
+
 def himdi_score(
     X_train: pd.DataFrame,
     X_hat: pd.DataFrame,
@@ -20,7 +35,7 @@ def himdi_score(
     n_min: int = 10,
     epsilon: float = 0.01,
     delta_multiplier: float = 1.0,
-    alpha: float = None,
+    alpha: float = 0.05,
     return_per_feature: bool = False,
     return_per_cell: bool = False,
 ):
@@ -49,14 +64,13 @@ def himdi_score(
         quando todos os parceiros tem correlacao proxima de zero
         (Eq. 2), sem precisar de uma convencao separada para esse caso.
     delta_multiplier : float, default=1.0
-        Multiplicador sobre o desvio-padrao residual para definir a
-        banda de tolerancia delta_{j|k} (mesma semantica da versao
-        original).
-    alpha : float, optional
-        Se informado, substitui a banda delta_multiplier * std pelo
-        quantil (1 - alpha) de |residuos| no treino, de forma que uma
-        imputacao perfeita (valores trocaveis com o treino) viole a banda
-        com probabilidade ~alpha. Ignora delta_multiplier.
+        Usado apenas quando alpha=None: banda legada
+        delta_{j|k} = delta_multiplier * std(residuos).
+    alpha : float or None, default=0.05
+        Nivel da banda split-conformal (Eq. 6): delta_{j|k} e o residuo
+        absoluto de ordem ceil((n + 1)(1 - alpha)) no treino, de forma que
+        um valor trocavel com o treino viole a banda com probabilidade
+        ~alpha. Se None, usa a banda legada baseada no desvio-padrao.
     return_per_feature : bool, default=False
         Se True, retorna tambem o dict {feature: HIMDI_j} (Eq. 2),
         alem do HIMDI agregado (Eq. 3).
@@ -116,7 +130,7 @@ def himdi_score(
             if alpha is None:
                 delta_jk = delta_multiplier * residuals.std()
             else:
-                delta_jk = np.quantile(np.abs(residuals), 1 - alpha)
+                delta_jk = conformal_band(residuals, alpha)
 
             # --- Celulas avaliaveis: j imputado e k observado ---
             k_missing = missing_mask.get(
