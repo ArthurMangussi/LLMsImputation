@@ -461,6 +461,8 @@ class BenchmarkPipeline:
         Returns:
             pd.DataFrame: COVID data
         """
+        if "covid" not in self.datasets:
+            return None  # data/covid-santa-casa foi removido do repositorio
         df = self.datasets["covid"].copy()
         df = df.drop(columns="id_notificacao")
         return df

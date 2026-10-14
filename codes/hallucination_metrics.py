@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("./")
 import os
+import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold
@@ -12,9 +13,18 @@ from utils.MeLogSingle import MeLogger
 
 from algorithms.llm import MAPPED_LLMS
 
-from himdi import himdi_score
+from himdi import himdi_score, himdi_mv_score
 from chrmi import train_oracle, compute_chrmi
-from mowi_index import mowi_hallucination_index
+from mowi_index import mowi_hallucination_index, rihi_suave
+
+ALPHA = 0.05  # banda do HIMDI: quantil (1 - alpha) de |residuos| no treino
+METODOS_NORMALIZADOS = ["knn", "mice", "missForest", "saei", "tabpfn", "softImpute"]
+
+
+def _desnormaliza(X_hat: pd.DataFrame, X_treino: pd.DataFrame) -> pd.DataFrame:
+    lo, hi = X_treino.min(), X_treino.max()
+    amp = (hi - lo).where(hi > lo, 1.0)
+    return X_hat * amp + lo
 
 
 def pipeline_hallucination_metrics(
@@ -33,7 +43,7 @@ def pipeline_hallucination_metrics(
         tag = model_impt
 
     os.makedirs(
-        f"./results/{tag}/Resultados/{mecanismo}_Hallucination", exist_ok=True
+        f"./results/{tag}/Resultados/{mecanismo}_Hallucination_v2", exist_ok=True
     )
 
     linhas_resultado = []
@@ -44,7 +54,10 @@ def pipeline_hallucination_metrics(
         ):
             df = dados.copy()
             df.columns = df.columns.str.strip()
-            X = df.drop(columns="target")
+            # Colunas object (ex.: chronic, credit-approval) viravam um
+            # X_treino inteiramente object e o HIMDI ficava sem nenhuma
+            # coluna numerica (NaN).
+            X = df.drop(columns="target").apply(pd.to_numeric, errors="coerce").astype(float)
             y = df["target"].values
 
             _logger.info(
@@ -84,7 +97,10 @@ def pipeline_hallucination_metrics(
 
                 df_imputed = pd.read_csv(imputed_path)
                 df_imputed.columns = df_imputed.columns.str.strip()
-                X_hat = df_imputed[X.columns]
+                X_hat = df_imputed[X.columns].apply(pd.to_numeric, errors="coerce")
+                if tag in METODOS_NORMALIZADOS:
+                    X_hat = _desnormaliza(X_hat, X_treino)
+                    df_imputed[X.columns] = X_hat
 
                 df_treino_oraculo = X_treino.copy()
                 df_treino_oraculo["target"] = y_treino
@@ -96,6 +112,7 @@ def pipeline_hallucination_metrics(
                     X_train=X_treino,
                     X_hat=X_hat,
                     missing_mask=missing_mask,
+                    alpha=ALPHA,
                     return_per_cell=True,
                 )
 
@@ -131,7 +148,7 @@ def pipeline_hallucination_metrics(
 
     resultados_df = pd.DataFrame(linhas_resultado)
     resultados_df.to_csv(
-        f"./results/{tag}/Resultados/{mecanismo}_Hallucination/"
+        f"./results/{tag}/Resultados/{mecanismo}_Hallucination_v2/"
         f"{tag}_{mecanismo}_hallucination_metrics.csv",
         index=False,
     )
